@@ -1,9 +1,16 @@
 import { useState } from 'react'
-import { MousePointer2, Hand, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
+import {
+  MousePointer2, Hand, ZoomIn, ZoomOut, Maximize2,
+  Type, Square, FileText,
+} from 'lucide-react'
 import { useReactFlow } from '@xyflow/react'
 import { cn } from '@/lib/utils'
 
-export function CanvasToolbar() {
+interface CanvasToolbarProps {
+  onInsertAnnotation?: (type: 'text' | 'border' | 'titleblock') => void
+}
+
+export function CanvasToolbar({ onInsertAnnotation }: CanvasToolbarProps) {
   const { zoomIn, zoomOut, fitView } = useReactFlow()
   const [panMode, setPanMode] = useState(false)
 
@@ -15,14 +22,14 @@ export function CanvasToolbar() {
       {/* Mode toggle */}
       <button
         onClick={() => setPanMode(false)}
-        title="Select mode"
+        title="Select mode (S)"
         className={cn(btnClass, !panMode && 'text-blue-600 ring-1 ring-blue-300')}
       >
         <MousePointer2 size={15} />
       </button>
       <button
         onClick={() => setPanMode(true)}
-        title="Pan mode"
+        title="Pan mode (Space)"
         className={cn(btnClass, panMode && 'text-blue-600 ring-1 ring-blue-300')}
       >
         <Hand size={15} />
@@ -34,25 +41,55 @@ export function CanvasToolbar() {
       {/* Zoom controls */}
       <button
         onClick={() => zoomIn()}
-        title="Zoom in"
+        title="Zoom in (Ctrl+=)"
         className={btnClass}
       >
         <ZoomIn size={15} />
       </button>
       <button
         onClick={() => zoomOut()}
-        title="Zoom out"
+        title="Zoom out (Ctrl+-)"
         className={btnClass}
       >
         <ZoomOut size={15} />
       </button>
       <button
         onClick={() => fitView({ padding: 0.1 })}
-        title="Fit view"
+        title="Fit view (Ctrl+0)"
         className={btnClass}
       >
         <Maximize2 size={15} />
       </button>
+
+      {/* Separator */}
+      {onInsertAnnotation && (
+        <>
+          <div className="h-px bg-gray-200 mx-1 my-0.5" />
+
+          {/* Annotation tools */}
+          <button
+            onClick={() => onInsertAnnotation('text')}
+            title="Insert text label"
+            className={btnClass}
+          >
+            <Type size={15} />
+          </button>
+          <button
+            onClick={() => onInsertAnnotation('border')}
+            title="Insert border frame"
+            className={btnClass}
+          >
+            <Square size={15} />
+          </button>
+          <button
+            onClick={() => onInsertAnnotation('titleblock')}
+            title="Insert title block"
+            className={btnClass}
+          >
+            <FileText size={15} />
+          </button>
+        </>
+      )}
     </div>
   )
 }

@@ -1,30 +1,55 @@
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import { cn } from '@/lib/utils'
 import { UNIT_SYMBOLS } from '@/components/canvas/symbols'
-import type { UnitNode, UnitSolveStatus } from '@/types'
+import type { UnitNode, UnitSolveStatus, UnitModelType } from '@/types'
 
 export type UnitNodeType = Node<{ unit: UnitNode }, 'UnitNode'>
+
+// ─── Color mappings ───────────────────────────────────────────────────────────
 
 const STATUS_DOT: Record<UnitSolveStatus, string> = {
   idle:      'bg-gray-400',
   solving:   'bg-blue-500 animate-pulse',
-  converged: 'bg-[#22C55E]',
-  warning:   'bg-[#F59E0B]',
-  error:     'bg-[#EF4444]',
-  disabled:  'bg-[#9CA3AF]',
+  converged: 'bg-green-500',
+  warning:   'bg-amber-400',
+  error:     'bg-red-500',
+  disabled:  'bg-gray-300',
 }
+
+// Symbol color per solve status (spec: gray-500 idle, gray-700 converged, red error)
+function getSymbolColor(status: UnitSolveStatus, enabled: boolean): string {
+  if (!enabled) return '#D1D5DB'   // gray-300
+  switch (status) {
+    case 'converged': return '#374151'  // gray-700
+    case 'error':     return '#EF4444'  // red-500
+    case 'warning':   return '#F59E0B'  // amber-400
+    case 'solving':   return '#3B82F6'  // blue-500
+    default:          return '#6B7280'  // gray-500
+  }
+}
+
+// ─── Node renderer ───────────────────────────────────────────────────────────
 
 export function UnitNodeRenderer({ data, selected }: NodeProps<UnitNodeType>) {
   const { unit } = data
-  const Icon = UNIT_SYMBOLS[unit.type]
+  // Resolve symbol from symbolKey (allows custom symbol variant) or fall back to type
+  const symbolKey = (unit.symbolKey in UNIT_SYMBOLS ? unit.symbolKey : unit.type) as UnitModelType
+  const Symbol = UNIT_SYMBOLS[symbolKey]
+  const symbolColor = getSymbolColor(unit.solveStatus, unit.enabled)
   const isDisabled = !unit.enabled
+  // FeederSink gets dashed border to indicate cross-page connector status
+  const isCrossPage = unit.type === 'FeederSink'
 
   return (
     <div
       className={cn(
-        'relative bg-white rounded-lg border border-gray-200 min-w-[80px] min-h-[80px]',
+        'relative bg-white rounded-lg border-2 min-w-[80px] min-h-[80px]',
         'flex flex-col items-center justify-center p-2 cursor-pointer select-none',
-        selected && 'ring-2 ring-blue-500',
+        selected
+          ? 'border-blue-500 shadow-md shadow-blue-100'
+          : isCrossPage
+            ? 'border-dashed border-gray-400'
+            : 'border-gray-200',
         isDisabled && 'opacity-60',
       )}
     >
@@ -36,20 +61,15 @@ export function UnitNodeRenderer({ data, selected }: NodeProps<UnitNodeType>) {
         )}
       />
 
-      {/* Unit icon */}
-      <Icon
-        size={24}
-        className={cn(
-          isDisabled ? 'text-gray-300' : 'text-gray-400',
-        )}
-      />
+      {/* SVG Symbol — 36×36 centered */}
+      <Symbol size={36} color={symbolColor} />
 
       {/* Tag label */}
       <span className="text-[10px] text-gray-600 mt-1 text-center leading-tight max-w-[72px] truncate">
         {unit.tag}
       </span>
 
-      {/* Connection handles — visible on hover */}
+      {/* Connection handles — visible on node hover via CSS */}
       <Handle
         type="target"
         position={Position.Left}

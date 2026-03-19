@@ -134,10 +134,30 @@ export interface PipeEdge {
 // ─── Flowsheet ────────────────────────────────────────────────────────────────
 export interface Annotation {
   id: string
-  type: 'text' | 'border' | 'arrow'
+  type: 'text' | 'border' | 'titleblock'
   position: { x: number; y: number }
+  size?: { width: number; height: number }
   content?: string
   style?: Record<string, string>
+  // text annotation
+  fontSize?: number
+  fontWeight?: 'normal' | 'bold'
+  fontStyle?: 'normal' | 'italic'
+  textColor?: string
+  // border annotation
+  borderStyle?: 'solid' | 'dashed'
+  borderColor?: string
+  borderWidth?: number
+  headerText?: string
+  headerColor?: string
+  // title block
+  projectName?: string
+  flowsheetName?: string
+  revision?: string
+  date?: string
+  drawnBy?: string
+  checkedBy?: string
+  logoBase64?: string
 }
 
 export interface Flowsheet {

@@ -5,6 +5,7 @@ import type {
   Flowsheet,
   UnitNode,
   PipeEdge,
+  Annotation,
   SolverStatus,
   UnitSolveStatus,
   AuditEntry,
@@ -53,12 +54,18 @@ interface ProjectStoreState {
   addFlowsheet: (flowsheet: Flowsheet) => void
   removeFlowsheet: (id: string) => void
   updateFlowsheet: (id: string, updates: Partial<Flowsheet>) => void
+  renameFlowsheet: (id: string, name: string) => void
+  duplicateFlowsheet: (id: string) => string | null
+  reorderFlowsheet: (id: string, direction: 'left' | 'right') => void
   addNode: (flowsheetId: string, node: UnitNode) => void
   removeNode: (flowsheetId: string, nodeId: string) => void
   updateNode: (flowsheetId: string, nodeId: string, updates: Partial<UnitNode>) => void
   addEdge: (flowsheetId: string, edge: PipeEdge) => void
   removeEdge: (flowsheetId: string, edgeId: string) => void
   updateEdge: (flowsheetId: string, edgeId: string, updates: Partial<PipeEdge>) => void
+  addAnnotation: (flowsheetId: string, annotation: Annotation) => void
+  updateAnnotation: (flowsheetId: string, id: string, updates: Partial<Annotation>) => void
+  removeAnnotation: (flowsheetId: string, id: string) => void
   touchModifiedAt: () => void
 }
 
@@ -101,6 +108,51 @@ export const useProjectStore = create<ProjectStoreState>()(
       set((state) => {
         const fs = state.project.flowsheets.find((f) => f.id === id)
         if (fs) Object.assign(fs, updates)
+        state.project.modifiedAt = new Date().toISOString()
+      }),
+
+    renameFlowsheet: (id, name) =>
+      set((state) => {
+        const fs = state.project.flowsheets.find((f) => f.id === id)
+        if (fs) fs.name = name.trim()
+        state.project.modifiedAt = new Date().toISOString()
+      }),
+
+    duplicateFlowsheet: (id) => {
+      let newId: string | null = null
+      set((state) => {
+        const fs = state.project.flowsheets.find((f) => f.id === id)
+        if (!fs) return
+        newId = crypto.randomUUID()
+        const maxOrder = Math.max(...state.project.flowsheets.map((f) => f.order))
+        const newFs: Flowsheet = {
+          ...fs,
+          id: newId,
+          name: `${fs.name} (copy)`,
+          order: maxOrder + 1,
+          nodes: fs.nodes.map((n) => ({ ...n, id: crypto.randomUUID() })),
+          edges: [],
+          annotations: fs.annotations.map((a) => ({ ...a, id: crypto.randomUUID() })),
+        }
+        state.project.flowsheets.push(newFs)
+        state.project.modifiedAt = new Date().toISOString()
+      })
+      return newId
+    },
+
+    reorderFlowsheet: (id, direction) =>
+      set((state) => {
+        const sorted = [...state.project.flowsheets].sort((a, b) => a.order - b.order)
+        const idx = sorted.findIndex((f) => f.id === id)
+        if (idx === -1) return
+        const swapIdx = direction === 'left' ? idx - 1 : idx + 1
+        if (swapIdx < 0 || swapIdx >= sorted.length) return
+        // Swap order values
+        const a = state.project.flowsheets.find((f) => f.id === sorted[idx].id)!
+        const b = state.project.flowsheets.find((f) => f.id === sorted[swapIdx].id)!
+        const tmp = a.order
+        a.order = b.order
+        b.order = tmp
         state.project.modifiedAt = new Date().toISOString()
       }),
 
@@ -149,6 +201,30 @@ export const useProjectStore = create<ProjectStoreState>()(
           const edge = fs.edges.find((e) => e.id === edgeId)
           if (edge) Object.assign(edge, updates)
         }
+        state.project.modifiedAt = new Date().toISOString()
+      }),
+
+    addAnnotation: (flowsheetId, annotation) =>
+      set((state) => {
+        const fs = state.project.flowsheets.find((f) => f.id === flowsheetId)
+        if (fs) fs.annotations.push(annotation)
+        state.project.modifiedAt = new Date().toISOString()
+      }),
+
+    updateAnnotation: (flowsheetId, id, updates) =>
+      set((state) => {
+        const fs = state.project.flowsheets.find((f) => f.id === flowsheetId)
+        if (fs) {
+          const ann = fs.annotations.find((a) => a.id === id)
+          if (ann) Object.assign(ann, updates)
+        }
+        state.project.modifiedAt = new Date().toISOString()
+      }),
+
+    removeAnnotation: (flowsheetId, id) =>
+      set((state) => {
+        const fs = state.project.flowsheets.find((f) => f.id === flowsheetId)
+        if (fs) fs.annotations = fs.annotations.filter((a) => a.id !== id)
         state.project.modifiedAt = new Date().toISOString()
       }),
 

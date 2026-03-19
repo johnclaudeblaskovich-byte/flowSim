@@ -4,7 +4,6 @@ import {
   ReactFlowProvider,
   Background,
   BackgroundVariant,
-  Controls,
   MiniMap,
   applyNodeChanges,
   applyEdgeChanges,
@@ -23,23 +22,63 @@ import {
   type EdgeMouseHandler,
 } from '@xyflow/react'
 import { useProjectStore, useCanvasStore, useUIStore } from '@/store'
-import { UnitNodeRenderer, type UnitNodeType } from './nodes/UnitNodeRenderer'
+import { UnitNodeRenderer } from './nodes/UnitNodeRenderer'
 import { PipeEdgeRenderer, type PipeEdgeType } from './edges/PipeEdgeRenderer'
+import { TextLabel } from './annotations/TextLabel'
+import { BorderFrame } from './annotations/BorderFrame'
+import { TitleBlock } from './annotations/TitleBlock'
 import { CanvasToolbar } from './CanvasToolbar'
+import { SymbolPickerDialog } from './symbols/SymbolPickerDialog'
 import { generateTag } from '@/lib/tagUtils'
-import type { UnitNode, PipeEdge, UnitModelType } from '@/types'
+import type { UnitNode, PipeEdge, UnitModelType, Annotation } from '@/types'
 
 // ─── RF type aliases ──────────────────────────────────────────────────────────
-type AppUnitNode = UnitNodeType
+// Use base Node for mixed node types (unit + annotations); narrowing happens at render time
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AppNode = Node<any>
 type AppPipeEdge = PipeEdgeType
 
+// ─── Units with no stream connections ────────────────────────────────────────
+const NO_STREAM_UNITS: UnitModelType[] = [
+  'GeneralController',
+  'PIDController',
+  'SetTagController',
+  'MakeupSource',
+]
+
 // ─── Conversion helpers ───────────────────────────────────────────────────────
-function toRFNode(unit: UnitNode): AppUnitNode {
+function toRFNode(unit: UnitNode): AppNode {
   return {
     id: unit.id,
     type: 'UnitNode' as const,
     position: unit.position,
     data: { unit },
+  }
+}
+
+function toRFAnnotation(ann: Annotation): AppNode {
+  if (ann.type === 'border') {
+    return {
+      id: ann.id,
+      type: 'annotation-border' as const,
+      position: ann.position,
+      style: ann.size ? { width: ann.size.width, height: ann.size.height } : { width: 200, height: 150 },
+      data: { annotation: ann },
+    }
+  }
+  if (ann.type === 'titleblock') {
+    return {
+      id: ann.id,
+      type: 'annotation-titleblock' as const,
+      position: ann.position,
+      data: { annotation: ann },
+    }
+  }
+  return {
+    id: ann.id,
+    type: 'annotation-text' as const,
+    position: ann.position,
+    data: { annotation: ann },
   }
 }
 
@@ -62,26 +101,29 @@ interface CtxMenu {
   nodeId: string
 }
 
-// ─── Inner canvas (inside ReactFlowProvider) ──────────────────────────────────
+// ─── Inner canvas ─────────────────────────────────────────────────────────────
 function FlowsheetCanvasInner() {
-  const { project, addNode, removeNode, updateNode, addEdge: storeAddEdge, removeEdge: storeRemoveEdge } =
+  const { project, addNode, removeNode, updateNode, addEdge: storeAddEdge, removeEdge: storeRemoveEdge, addAnnotation } =
     useProjectStore()
   const { activeFlowsheetId, setSelectedNodeId, setSelectedEdgeId, clearSelection } =
     useCanvasStore()
   const { setRightPanelOpen, setAccessWindowUnitId } = useUIStore()
   const { screenToFlowPosition } = useReactFlow()
 
-  const [nodes, setNodes] = useNodesState<AppUnitNode>([])
+  const [nodes, setNodes] = useNodesState<AppNode>([])
   const [edges, setEdges] = useEdgesState<AppPipeEdge>([])
   const [showMiniMap, setShowMiniMap] = useState(false)
   const [ctxMenu, setCtxMenu] = useState<CtxMenu | null>(null)
+  const [symbolPickerNodeId, setSymbolPickerNodeId] = useState<string | null>(null)
   const ctxRef = useRef<HTMLDivElement>(null)
 
   // ── Initialize RF state from store when active flowsheet changes ────────────
   useEffect(() => {
     const fs = project.flowsheets.find((f) => f.id === activeFlowsheetId)
     if (fs) {
-      setNodes(fs.nodes.map(toRFNode))
+      const unitNodes = fs.nodes.map(toRFNode)
+      const annNodes = fs.annotations.map(toRFAnnotation)
+      setNodes([...unitNodes, ...annNodes])
       setEdges(fs.edges.map(toRFEdge))
     } else {
       setNodes([])
@@ -115,23 +157,28 @@ function FlowsheetCanvasInner() {
   }, [ctxMenu])
 
   // ── Node types / edge types (stable references) ───────────────────────────
-  const nodeTypes = useMemo<NodeTypes>(() => ({ UnitNode: UnitNodeRenderer }), [])
+  const nodeTypes = useMemo<NodeTypes>(() => ({
+    UnitNode: UnitNodeRenderer,
+    'annotation-text': TextLabel,
+    'annotation-border': BorderFrame,
+    'annotation-titleblock': TitleBlock,
+  }), [])
   const edgeTypes = useMemo<EdgeTypes>(() => ({ PipeEdge: PipeEdgeRenderer }), [])
 
-  // ── onNodesChange: apply locally ──────────────────────────────────────────
-  const onNodesChange: OnNodesChange<AppUnitNode> = useCallback(
+  // ── onNodesChange ─────────────────────────────────────────────────────────
+  const onNodesChange: OnNodesChange<AppNode> = useCallback(
     (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
     [setNodes],
   )
 
-  // ── onEdgesChange: apply locally ──────────────────────────────────────────
+  // ── onEdgesChange ─────────────────────────────────────────────────────────
   const onEdgesChange: OnEdgesChange<AppPipeEdge> = useCallback(
     (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
     [setEdges],
   )
 
-  // ── onNodeDragStop: sync position to store ────────────────────────────────
-  const onNodeDragStop: NodeMouseHandler<AppUnitNode> = useCallback(
+  // ── onNodeDragStop ────────────────────────────────────────────────────────
+  const onNodeDragStop: NodeMouseHandler<AppNode> = useCallback(
     (_e, node) => {
       if (!activeFlowsheetId) return
       updateNode(activeFlowsheetId, node.id, { position: node.position })
@@ -139,7 +186,41 @@ function FlowsheetCanvasInner() {
     [activeFlowsheetId, updateNode],
   )
 
-  // ── onConnect: create a PipeEdge and add to both RF and store ─────────────
+  // ── Connection validation ─────────────────────────────────────────────────
+  const isValidConnection = useCallback(
+    (connection: { source: string | null; target: string | null }) => {
+      const { source, target } = connection
+      if (!source || !target) return false
+      // Rule 1: no self-connections
+      if (source === target) return false
+
+      const fs = project.flowsheets.find((f) => f.id === activeFlowsheetId)
+      if (!fs) return false
+      const sourceUnit = fs.nodes.find((n) => n.id === source)
+      const targetUnit = fs.nodes.find((n) => n.id === target)
+      if (!sourceUnit || !targetUnit) return false
+
+      // Rule 5: controllers and MakeupSource have no stream connections
+      if (NO_STREAM_UNITS.includes(sourceUnit.type) || NO_STREAM_UNITS.includes(targetUnit.type)) {
+        return false
+      }
+
+      // Rule 4: Feeder only has outputs (cannot be a target), FeederSink only inputs (cannot be source)
+      if (sourceUnit.type === 'FeederSink') return false
+      if (targetUnit.type === 'Feeder' || targetUnit.type === 'MakeupSource') return false
+
+      // Rule 3: no duplicate edges between same source/target
+      const alreadyConnected = fs.edges.some(
+        (e) => e.source === source && e.target === target,
+      )
+      if (alreadyConnected) return false
+
+      return true
+    },
+    [activeFlowsheetId, project.flowsheets],
+  )
+
+  // ── onConnect ────────────────────────────────────────────────────────────
   const onConnect: OnConnect = useCallback(
     (connection) => {
       if (!activeFlowsheetId || !connection.source || !connection.target) return
@@ -148,9 +229,19 @@ function FlowsheetCanvasInner() {
       const targetUnit = fs?.nodes.find((n) => n.id === connection.target)
       if (!sourceUnit || !targetUnit) return
 
+      // Auto-tag: {sourceTag}_TO_{targetTag}, append _2, _3 if duplicate
+      const baseTag = `${sourceUnit.tag}_TO_${targetUnit.tag}`
+      const existing = fs?.edges ?? []
+      let finalTag = baseTag
+      let suffix = 2
+      while (existing.some((e) => e.tag === finalTag)) {
+        finalTag = `${baseTag}_${suffix}`
+        suffix++
+      }
+
       const newPipe: PipeEdge = {
         id: crypto.randomUUID(),
-        tag: `S_${String((fs?.edges.length ?? 0) + 1).padStart(3, '0')}`,
+        tag: finalTag,
         source: connection.source,
         target: connection.target,
         sourceHandle: connection.sourceHandle ?? undefined,
@@ -158,26 +249,28 @@ function FlowsheetCanvasInner() {
         config: { simplified: true },
       }
       storeAddEdge(activeFlowsheetId, newPipe)
-      setEdges((eds) =>
-        addEdge<AppPipeEdge>(
-          { ...toRFEdge(newPipe) },
-          eds,
-        ),
-      )
+      setEdges((eds) => addEdge<AppPipeEdge>({ ...toRFEdge(newPipe) }, eds))
     },
     [activeFlowsheetId, project.flowsheets, storeAddEdge, setEdges],
   )
 
-  // ── onNodesDelete: remove from store ─────────────────────────────────────
+  // ── onNodesDelete ─────────────────────────────────────────────────────────
   const onNodesDelete = useCallback(
     (deleted: Node[]) => {
       if (!activeFlowsheetId) return
-      deleted.forEach((n) => removeNode(activeFlowsheetId, n.id))
+      deleted.forEach((n) => {
+        removeNode(activeFlowsheetId, n.id)
+        // Also remove connected edges from store
+        const fs = project.flowsheets.find((f) => f.id === activeFlowsheetId)
+        fs?.edges
+          .filter((e) => e.source === n.id || e.target === n.id)
+          .forEach((e) => storeRemoveEdge(activeFlowsheetId, e.id))
+      })
     },
-    [activeFlowsheetId, removeNode],
+    [activeFlowsheetId, removeNode, storeRemoveEdge, project.flowsheets],
   )
 
-  // ── onEdgesDelete: remove from store ─────────────────────────────────────
+  // ── onEdgesDelete ─────────────────────────────────────────────────────────
   const onEdgesDelete = useCallback(
     (deleted: Edge[]) => {
       if (!activeFlowsheetId) return
@@ -187,7 +280,7 @@ function FlowsheetCanvasInner() {
   )
 
   // ── Selection events ──────────────────────────────────────────────────────
-  const onNodeClick: NodeMouseHandler<AppUnitNode> = useCallback(
+  const onNodeClick: NodeMouseHandler<AppNode> = useCallback(
     (_e, node) => {
       setSelectedNodeId(node.id)
       setAccessWindowUnitId(node.id)
@@ -196,7 +289,7 @@ function FlowsheetCanvasInner() {
     [setSelectedNodeId, setAccessWindowUnitId, setRightPanelOpen],
   )
 
-  const onNodeDoubleClick: NodeMouseHandler<AppUnitNode> = useCallback(
+  const onNodeDoubleClick: NodeMouseHandler<AppNode> = useCallback(
     (_e, node) => {
       setAccessWindowUnitId(node.id)
       setRightPanelOpen(true)
@@ -218,7 +311,7 @@ function FlowsheetCanvasInner() {
   }, [clearSelection, setRightPanelOpen])
 
   // ── Context menu ──────────────────────────────────────────────────────────
-  const onNodeContextMenu: NodeMouseHandler<AppUnitNode> = useCallback(
+  const onNodeContextMenu: NodeMouseHandler<AppNode> = useCallback(
     (e, node) => {
       e.preventDefault()
       setCtxMenu({ x: e.clientX, y: e.clientY, nodeId: node.id })
@@ -226,7 +319,7 @@ function FlowsheetCanvasInner() {
     [],
   )
 
-  // ── Drag-to-place handlers ────────────────────────────────────────────────
+  // ── Drag-to-place ─────────────────────────────────────────────────────────
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
@@ -292,38 +385,82 @@ function FlowsheetCanvasInner() {
     setNodes((nds) =>
       nds.map((n) =>
         n.id === ctxMenu.nodeId
-          ? {
-              ...n,
-              data: {
-                unit: { ...n.data.unit, enabled: nextEnabled, solveStatus: nextStatus },
-              },
-            }
+          ? { ...n, data: { unit: { ...n.data.unit, enabled: nextEnabled, solveStatus: nextStatus } } }
           : n,
       ),
     )
     setCtxMenu(null)
   }
 
-  function ctxDelete() {
-    if (!ctxMenu || !activeFlowsheetId) return
-    removeNode(activeFlowsheetId, ctxMenu.nodeId)
-    setNodes((nds) => nds.filter((n) => n.id !== ctxMenu.nodeId))
-    setEdges((eds) =>
-      eds.filter(
-        (e) => e.source !== ctxMenu.nodeId && e.target !== ctxMenu.nodeId,
-      ),
-    )
-    // Also remove connected edges from store
-    const fs = project.flowsheets.find((f) => f.id === activeFlowsheetId)
-    fs?.edges
-      .filter(
-        (e) => e.source === ctxMenu.nodeId || e.target === ctxMenu.nodeId,
-      )
-      .forEach((e) => storeRemoveEdge(activeFlowsheetId, e.id))
+  function ctxChangeSymbol() {
+    if (!ctxMenu) return
+    setSymbolPickerNodeId(ctxMenu.nodeId)
     setCtxMenu(null)
   }
 
-  // ── Context menu: find unit for enable/disable label ─────────────────────
+  function ctxDelete() {
+    if (!ctxMenu || !activeFlowsheetId) return
+    const fs = project.flowsheets.find((f) => f.id === activeFlowsheetId)
+    // Remove connected edges from store first
+    fs?.edges
+      .filter((e) => e.source === ctxMenu.nodeId || e.target === ctxMenu.nodeId)
+      .forEach((e) => storeRemoveEdge(activeFlowsheetId, e.id))
+    removeNode(activeFlowsheetId, ctxMenu.nodeId)
+    setNodes((nds) => nds.filter((n) => n.id !== ctxMenu.nodeId))
+    setEdges((eds) =>
+      eds.filter((e) => e.source !== ctxMenu.nodeId && e.target !== ctxMenu.nodeId),
+    )
+    setCtxMenu(null)
+  }
+
+  // ── Insert annotation ─────────────────────────────────────────────────────
+  const handleInsertAnnotation = useCallback(
+    (type: 'text' | 'border' | 'titleblock') => {
+      if (!activeFlowsheetId) return
+      const now = new Date().toLocaleDateString()
+      const fs = project.flowsheets.find((f) => f.id === activeFlowsheetId)
+      const ann: Annotation = {
+        id: crypto.randomUUID(),
+        type,
+        position: { x: 100, y: 100 },
+        ...(type === 'border' && { size: { width: 200, height: 150 }, headerText: '' }),
+        ...(type === 'titleblock' && {
+          projectName: project.name,
+          flowsheetName: fs?.name ?? '',
+          date: now,
+          revision: 'A',
+          drawnBy: '',
+          checkedBy: '',
+        }),
+        ...(type === 'text' && { content: 'Label', fontSize: 14 }),
+      }
+      addAnnotation(activeFlowsheetId, ann)
+      setNodes((nds) => [...nds, toRFAnnotation(ann)])
+    },
+    [activeFlowsheetId, project, addAnnotation, setNodes],
+  )
+
+  // ── Symbol picker ─────────────────────────────────────────────────────────
+  const symbolPickerUnit = symbolPickerNodeId
+    ? project.flowsheets
+        .find((f) => f.id === activeFlowsheetId)
+        ?.nodes.find((n) => n.id === symbolPickerNodeId)
+    : null
+
+  function handleSymbolSelect(symbolKey: string) {
+    if (!symbolPickerNodeId || !activeFlowsheetId) return
+    updateNode(activeFlowsheetId, symbolPickerNodeId, { symbolKey })
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.id === symbolPickerNodeId
+          ? { ...n, data: { unit: { ...n.data.unit, symbolKey } } }
+          : n,
+      ),
+    )
+    setSymbolPickerNodeId(null)
+  }
+
+  // ── Context menu helpers ──────────────────────────────────────────────────
   const ctxUnit = ctxMenu
     ? project.flowsheets
         .find((f) => f.id === activeFlowsheetId)
@@ -336,13 +473,14 @@ function FlowsheetCanvasInner() {
 
   return (
     <div className="relative w-full h-full">
-      <ReactFlow<AppUnitNode, AppPipeEdge>
+      <ReactFlow<AppNode, AppPipeEdge>
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeDragStop={onNodeDragStop}
         onConnect={onConnect}
+        isValidConnection={isValidConnection}
         onNodesDelete={onNodesDelete}
         onEdgesDelete={onEdgesDelete}
         onNodeClick={onNodeClick}
@@ -366,12 +504,6 @@ function FlowsheetCanvasInner() {
           color="#DEE2E6"
           style={{ backgroundColor: '#F8F9FA' }}
         />
-        <Controls
-          showFitView
-          showZoom
-          showInteractive={false}
-          className="!bottom-8 !left-14"
-        />
         {showMiniMap && (
           <MiniMap
             nodeColor="#9CA3AF"
@@ -381,18 +513,13 @@ function FlowsheetCanvasInner() {
         )}
       </ReactFlow>
 
-      <CanvasToolbar />
+      <CanvasToolbar onInsertAnnotation={handleInsertAnnotation} />
 
-      {/* Context menu overlay */}
+      {/* Node context menu */}
       {ctxMenu && (
         <div
           ref={ctxRef}
-          style={{
-            position: 'fixed',
-            top: ctxMenu.y,
-            left: ctxMenu.x,
-            zIndex: 100,
-          }}
+          style={{ position: 'fixed', top: ctxMenu.y, left: ctxMenu.x, zIndex: 100 }}
           className="min-w-[160px] bg-white rounded-lg shadow-lg border border-gray-200 p-1"
         >
           <button className={menuItem} onClick={ctxOpenProperties}>
@@ -400,6 +527,9 @@ function FlowsheetCanvasInner() {
           </button>
           <button className={menuItem} onClick={ctxCopyTag}>
             Copy Tag
+          </button>
+          <button className={menuItem} onClick={ctxChangeSymbol}>
+            Change Symbol…
           </button>
           <div className={menuSep} />
           <button className={menuItem} onClick={ctxToggleEnable}>
@@ -414,11 +544,22 @@ function FlowsheetCanvasInner() {
           </button>
         </div>
       )}
+
+      {/* Symbol picker dialog */}
+      {symbolPickerUnit && (
+        <SymbolPickerDialog
+          open={true}
+          unitType={symbolPickerUnit.type}
+          unitTag={symbolPickerUnit.tag}
+          currentSymbolKey={symbolPickerUnit.symbolKey}
+          onSelect={handleSymbolSelect}
+          onClose={() => setSymbolPickerNodeId(null)}
+        />
+      )}
     </div>
   )
 }
 
-// ─── Public export wrapped in provider ────────────────────────────────────────
 export function FlowsheetCanvas() {
   return (
     <ReactFlowProvider>
