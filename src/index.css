@@ -22,3 +22,34 @@
   --field-editable-border: #93C5FD;
   --field-result-border: #D1D5DB;
 }
+
+/* React Flow handle visibility */
+.react-flow__handle {
+  width: 12px !important;
+  height: 12px !important;
+  background-color: #60a5fa !important;
+  border: 2px solid white !important;
+  border-radius: 50% !important;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.react-flow__node:hover .react-flow__handle,
+.react-flow__handle:hover {
+  opacity: 1;
+}
+
+/* Suppress default RF node background so our custom style takes over */
+.react-flow__node-UnitNode {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+/* Hide scrollbar on flowsheet tabs */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
