@@ -37,7 +37,10 @@ class SolverService {
   private ws: WebSocket | null = null
   private lastUpdateAt = 0
   private readonly UPDATE_INTERVAL_MS = 100 // 10 FPS max
-  private readonly WS_BASE = 'ws://localhost:8000/ws/solve'
+  private get WS_BASE(): string {
+    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    return `${proto}://${window.location.host}/ws/solve`
+  }
 
   solve(project: Project): void {
     if (this.ws) {
@@ -58,8 +61,33 @@ class SolverService {
     }
 
     this.ws.onopen = () => {
-      // Send the serialised project to the backend
-      this.ws?.send(JSON.stringify({ project }))
+      // Extract the active flowsheet and build the correct payload for the backend.
+      // Backend expects: { type: 'solve', flowsheet: { nodes: [...], edges: [...] } }
+      const flowsheet = project.flowsheets[0]
+      if (!flowsheet) {
+        toast.error('Solver error', 'No flowsheet found in project.')
+        useSolverStore.getState().stopSolve()
+        this.ws?.close()
+        return
+      }
+      // Build id→tag lookup so edge UUIDs can be resolved to unit tags
+      const tagById = Object.fromEntries(flowsheet.nodes.map((n) => [n.id, n.tag]))
+      const payload = {
+        type: 'solve',
+        flowsheet: {
+          nodes: flowsheet.nodes.map((n) => ({
+            tag: n.tag,
+            type: n.type,
+            config: n.config,
+            enabled: n.enabled,
+          })),
+          edges: flowsheet.edges.map((e) => ({
+            sourceTag: tagById[e.source] ?? e.source,
+            targetTag: tagById[e.target] ?? e.target,
+          })),
+        },
+      }
+      this.ws?.send(JSON.stringify(payload))
       console.info('[SolverService] Connected — job:', jobId)
     }
 

@@ -6,9 +6,10 @@ import { useCanvasStore } from '@/store'
 import { cn } from '@/lib/utils'
 import { FilterAccessWindow } from '@/components/accessWindow/FilterAccessWindow'
 import { ThickenerAccessWindow } from '@/components/accessWindow/ThickenerAccessWindow'
+import { FeederAccessWindow } from '@/components/accessWindow/FeederAccessWindow'
 import { SizeDistributionTab } from '@/components/accessWindow/SizeDistributionTab'
 
-type Tab = 'config' | 'dsz' | 'ports'
+type Tab = 'config' | 'feed' | 'dsz' | 'ports'
 
 export function AccessWindowPanel() {
   const { rightPanelOpen, accessWindowUnitId, setRightPanelOpen, setAccessWindowUnitId } =
@@ -26,6 +27,7 @@ export function AccessWindowPanel() {
     : null
 
   const hasUnitConfig = unit?.type === 'Filter' || unit?.type === 'Thickener'
+  const hasFeederConfig = unit?.type === 'Feeder'
   const hasStzeDistribution = unit?.type === 'Feeder'
 
   function handleClose() {
@@ -35,6 +37,7 @@ export function AccessWindowPanel() {
 
   const allTabs: { id: Tab; label: string; show: boolean }[] = [
     { id: 'config', label: 'Config', show: hasUnitConfig },
+    { id: 'feed', label: 'Feed', show: hasFeederConfig },
     { id: 'dsz', label: 'DSz', show: hasStzeDistribution },
     { id: 'ports', label: 'Ports', show: true },
   ]
@@ -107,6 +110,11 @@ export function AccessWindowPanel() {
               <ThickenerAccessWindow unit={unit} />
             )}
 
+            {/* Feed conditions tab (Feeder) */}
+            {activeTab === 'feed' && unit.type === 'Feeder' && (
+              <FeederAccessWindow unit={unit} />
+            )}
+
             {/* Size distribution tab (Feeder) */}
             {activeTab === 'dsz' && unit.type === 'Feeder' && (
               <div className="p-2">
@@ -115,7 +123,7 @@ export function AccessWindowPanel() {
             )}
 
             {/* Ports / generic properties */}
-            {(activeTab === 'ports' || (!hasUnitConfig && !hasStzeDistribution)) && (
+            {(activeTab === 'ports' || (!hasUnitConfig && !hasFeederConfig && !hasStzeDistribution)) && (
               <div className="p-4 space-y-3">
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Tag</p>

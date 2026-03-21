@@ -70,6 +70,7 @@ interface ProjectStoreState {
   updateAnnotation: (flowsheetId: string, id: string, updates: Partial<Annotation>) => void
   removeAnnotation: (flowsheetId: string, id: string) => void
   touchModifiedAt: () => void
+  toggleUnitEnabled: (flowsheetId: string, nodeId: string) => void
   setPGMSource: (filename: string, src: string) => void
   removePGMSource: (filename: string) => void
   setPGMSources: (sources: Record<string, string>) => void
@@ -236,6 +237,16 @@ export const useProjectStore = create<ProjectStoreState>()(
       set((state) => {
         const fs = state.project.flowsheets.find((f) => f.id === flowsheetId)
         if (fs) fs.annotations = fs.annotations.filter((a) => a.id !== id)
+        state.project.modifiedAt = new Date().toISOString()
+      }),
+
+    toggleUnitEnabled: (flowsheetId, nodeId) =>
+      set((state) => {
+        const fs = state.project.flowsheets.find((f) => f.id === flowsheetId)
+        if (fs) {
+          const node = fs.nodes.find((n) => n.id === nodeId)
+          if (node) node.enabled = !node.enabled
+        }
         state.project.modifiedAt = new Date().toISOString()
       }),
 
@@ -432,6 +443,10 @@ interface UIStoreState {
   setReportBuilderOpen: (open: boolean) => void
   setUnitPreferences: (prefs: UnitPreferences) => void
   setNewProjectWizardOpen: (open: boolean) => void
+  setupWindowOpen: boolean
+  setSetupWindowOpen: (open: boolean) => void
+  exampleProjectDialogOpen: boolean
+  setExampleProjectDialogOpen: (open: boolean) => void
 }
 
 export const useUIStore = create<UIStoreState>()(
@@ -445,6 +460,8 @@ export const useUIStore = create<UIStoreState>()(
     reportBuilderOpen: false,
     unitPreferences: { ...DEFAULT_UNIT_PREFERENCES },
     newProjectWizardOpen: false,
+    setupWindowOpen: false,
+    exampleProjectDialogOpen: false,
 
     setLeftNavTab: (tab) =>
       set((state) => {
@@ -504,6 +521,16 @@ export const useUIStore = create<UIStoreState>()(
     setNewProjectWizardOpen: (open) =>
       set((state) => {
         state.newProjectWizardOpen = open
+      }),
+
+    setSetupWindowOpen: (open) =>
+      set((state) => {
+        state.setupWindowOpen = open
+      }),
+
+    setExampleProjectDialogOpen: (open) =>
+      set((state) => {
+        state.exampleProjectDialogOpen = open
       }),
   })),
 )

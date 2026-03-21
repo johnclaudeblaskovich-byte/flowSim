@@ -21,6 +21,7 @@ interface TopBarProps {
   onOpen?: () => void
   onSave?: () => void
   onDxfOpen?: () => void
+  onOpenExample?: () => void
 }
 
 function SolverButton({
@@ -94,7 +95,7 @@ function IconButton({
   )
 }
 
-export function TopBar({ onOpen, onSave, onDxfOpen }: TopBarProps) {
+export function TopBar({ onOpen, onSave, onDxfOpen, onOpenExample }: TopBarProps) {
   const project = useProjectStore((s) => s.project)
   const { solverState, startSolve, pauseSolve, stopSolve } = useSolverStore()
   const { status } = solverState
@@ -190,6 +191,12 @@ export function TopBar({ onOpen, onSave, onDxfOpen }: TopBarProps) {
               >
                 <span>Open…</span>
                 <span className="text-gray-400 text-[10px]">Ctrl+O</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                className="px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 cursor-pointer outline-none"
+                onSelect={() => onOpenExample?.()}
+              >
+                Open Example Project…
               </DropdownMenu.Item>
               <DropdownMenu.Item
                 className="px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 cursor-pointer outline-none flex items-center justify-between"

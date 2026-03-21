@@ -20,7 +20,7 @@ type NavTab = 'flowsheets' | 'units' | 'species' | 'reactions' | 'controls'
 
 interface NavItem {
   icon: LucideIcon
-  tab: NavTab | null
+  tab: NavTab
   label: string
 }
 
@@ -30,25 +30,26 @@ const NAV_ITEMS: NavItem[] = [
   { icon: BarChart2,  tab: 'species',    label: 'Species' },
   { icon: TrendingUp, tab: 'reactions',  label: 'Reactions' },
   { icon: FolderOpen, tab: 'controls',   label: 'Controls' },
-  { icon: Settings,   tab: null,         label: 'Settings' },
 ]
 
-export function LeftNav() {
+interface LeftNavProps {
+  onSettingsClick?: () => void
+}
+
+export function LeftNav({ onSettingsClick }: LeftNavProps) {
   const leftNavTab = useUIStore((s) => s.leftNavTab)
   const setLeftNavTab = useUIStore((s) => s.setLeftNavTab)
 
   return (
     <div className="flex flex-col w-12 bg-[#F1F3F5] border-r border-gray-200 flex-none py-2 gap-1">
       {NAV_ITEMS.map(({ icon: Icon, tab, label }) => {
-        const isActive = tab !== null && leftNavTab === tab
+        const isActive = leftNavTab === tab
         return (
           <TooltipProvider key={label} delayDuration={300}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={() => {
-                    if (tab !== null) setLeftNavTab(tab)
-                  }}
+                  onClick={() => setLeftNavTab(tab)}
                   className={cn(
                     'w-9 h-9 rounded-lg flex items-center justify-center mx-auto transition-colors',
                     isActive
@@ -70,6 +71,30 @@ export function LeftNav() {
           </TooltipProvider>
         )
       })}
+
+      {/* Spacer pushes Settings to bottom */}
+      <div className="flex-1" />
+
+      {/* Settings button — opens Setup / Component Toggle window */}
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => onSettingsClick?.()}
+              className="w-9 h-9 rounded-lg flex items-center justify-center mx-auto transition-colors text-gray-500 hover:bg-gray-200 hover:text-gray-700"
+              aria-label="Settings"
+            >
+              <Settings size={18} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent
+            side="right"
+            className="bg-gray-800 text-white text-xs px-2 py-1 rounded"
+          >
+            Settings
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
   )
 }
