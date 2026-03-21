@@ -11,6 +11,12 @@ import { tagRegistry } from '@/services/tagRegistry'
 import { exportService } from '@/services/exportService'
 import { cn } from '@/lib/utils'
 
+interface TopBarProps {
+  onOpen?: () => void
+  onSave?: () => void
+  onDxfOpen?: () => void
+}
+
 function SolverButton({
   onClick,
   disabled,
@@ -82,16 +88,26 @@ function IconButton({
   )
 }
 
-export function TopBar() {
+export function TopBar({ onOpen, onSave, onDxfOpen }: TopBarProps) {
   const project = useProjectStore((s) => s.project)
   const { solverState, startSolve, pauseSolve, stopSolve } = useSolverStore()
   const { status } = solverState
-  const { trendPanelOpen, toggleTrendPanel, resultsPanelOpen, toggleResultsPanel, setReportBuilderOpen } = useUIStore()
+  const {
+    trendPanelOpen, toggleTrendPanel,
+    resultsPanelOpen, toggleResultsPanel,
+    setReportBuilderOpen,
+    setNewProjectWizardOpen,
+  } = useUIStore()
   const activeFlowsheetId = useCanvasStore((s) => s.activeFlowsheetId)
 
   const isSolving = status === 'solving'
   const isPaused = status === 'paused'
   const isIdle = status === 'idle' || status === 'converged' || status === 'error'
+
+  function handleSaveAs() {
+    // Save As: identical to Save for now (uses current project name as filename)
+    onSave?.()
+  }
 
   function handleExportExcel() {
     exportService.exportToExcel({ project })
@@ -130,8 +146,44 @@ export function TopBar() {
             <DropdownMenu.Content
               align="start"
               sideOffset={4}
-              className="bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-[200px] py-1 text-sm"
+              className="bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-[220px] py-1 text-sm"
             >
+              {/* Project file operations */}
+              <DropdownMenu.Item
+                className="px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 cursor-pointer outline-none flex items-center justify-between"
+                onSelect={() => setNewProjectWizardOpen(true)}
+              >
+                <span>New Project…</span>
+                <span className="text-gray-400 text-[10px]">Ctrl+N</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                className="px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 cursor-pointer outline-none flex items-center justify-between"
+                onSelect={() => onOpen?.()}
+              >
+                <span>Open…</span>
+                <span className="text-gray-400 text-[10px]">Ctrl+O</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                className="px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 cursor-pointer outline-none flex items-center justify-between"
+                onSelect={() => onSave?.()}
+              >
+                <span>Save</span>
+                <span className="text-gray-400 text-[10px]">Ctrl+S</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                className="px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 cursor-pointer outline-none"
+                onSelect={handleSaveAs}
+              >
+                Save As…
+              </DropdownMenu.Item>
+              <DropdownMenu.Separator className="my-1 border-t border-gray-100" />
+              <DropdownMenu.Item
+                className="px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 cursor-pointer outline-none"
+                onSelect={() => onDxfOpen?.()}
+              >
+                Import DXF…
+              </DropdownMenu.Item>
+              <DropdownMenu.Separator className="my-1 border-t border-gray-100" />
               <DropdownMenu.Label className="px-3 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
                 Export
               </DropdownMenu.Label>

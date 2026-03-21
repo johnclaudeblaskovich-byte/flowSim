@@ -5,6 +5,7 @@ import { useHistoryStore } from '@/store/historyStore'
 interface KeyboardShortcutOptions {
   onFindOpen: () => void
   onSave: () => void
+  onOpen?: () => void
 }
 
 /**
@@ -12,7 +13,7 @@ interface KeyboardShortcutOptions {
  * Mount once in App.tsx.
  * React Flow handles Delete/Backspace for selected nodes/edges internally.
  */
-export function useKeyboardShortcuts({ onFindOpen, onSave }: KeyboardShortcutOptions) {
+export function useKeyboardShortcuts({ onFindOpen, onSave, onOpen }: KeyboardShortcutOptions) {
   const { undo, redo } = useHistoryStore()
   const { clearSelection } = useCanvasStore()
   const { setRightPanelOpen } = useUIStore()
@@ -50,6 +51,13 @@ export function useKeyboardShortcuts({ onFindOpen, onSave }: KeyboardShortcutOpt
       if (ctrl && e.key === 's') {
         e.preventDefault()
         onSave()
+        return
+      }
+
+      // ── Open ──────────────────────────────────────────────────────────────
+      if (ctrl && e.key === 'o') {
+        e.preventDefault()
+        onOpen?.()
         return
       }
 
@@ -92,6 +100,6 @@ export function useKeyboardShortcuts({ onFindOpen, onSave }: KeyboardShortcutOpt
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [undo, redo, onSave, onFindOpen, clearSelection, setRightPanelOpen,
+  }, [undo, redo, onSave, onOpen, onFindOpen, clearSelection, setRightPanelOpen,
       startSolve, pauseSolve, stopSolve, solverState.status])
 }
