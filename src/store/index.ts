@@ -368,11 +368,14 @@ interface UIStoreState {
   rightPanelOpen: boolean
   rightPanelTab: RightPanelTab
   accessWindowUnitId: string | null
+  trendPanelOpen: boolean
   setLeftNavTab: (tab: LeftNavTab) => void
   setRightPanelOpen: (open: boolean) => void
   toggleRightPanel: () => void
   setRightPanelTab: (tab: RightPanelTab) => void
   setAccessWindowUnitId: (id: string | null) => void
+  setTrendPanelOpen: (open: boolean) => void
+  toggleTrendPanel: () => void
 }
 
 export const useUIStore = create<UIStoreState>()(
@@ -381,6 +384,7 @@ export const useUIStore = create<UIStoreState>()(
     rightPanelOpen: false,
     rightPanelTab: 'properties',
     accessWindowUnitId: null,
+    trendPanelOpen: false,
 
     setLeftNavTab: (tab) =>
       set((state) => {
@@ -405,6 +409,75 @@ export const useUIStore = create<UIStoreState>()(
     setAccessWindowUnitId: (id) =>
       set((state) => {
         state.accessWindowUnitId = id
+      }),
+
+    setTrendPanelOpen: (open) =>
+      set((state) => {
+        state.trendPanelOpen = open
+      }),
+
+    toggleTrendPanel: () =>
+      set((state) => {
+        state.trendPanelOpen = !state.trendPanelOpen
+      }),
+  })),
+)
+
+// ─── Trend Store ───────────────────────────────────────────────────────────────
+
+const TREND_COLORS = [
+  '#3b82f6', '#ef4444', '#10b981', '#f59e0b',
+  '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16',
+]
+
+export interface TrendTag {
+  tagPath: string
+  color: string
+  min?: number
+  max?: number
+}
+
+interface TrendStoreState {
+  trackedTags: TrendTag[]
+  logScale: boolean
+  addTag: (tagPath: string, color?: string) => void
+  removeTag: (tagPath: string) => void
+  updateTag: (tagPath: string, updates: Partial<TrendTag>) => void
+  clearTags: () => void
+  setLogScale: (v: boolean) => void
+}
+
+export const useTrendStore = create<TrendStoreState>()(
+  immer((set) => ({
+    trackedTags: [],
+    logScale: false,
+
+    addTag: (tagPath, color) =>
+      set((state) => {
+        if (state.trackedTags.some((t) => t.tagPath === tagPath)) return
+        const autoColor = TREND_COLORS[state.trackedTags.length % TREND_COLORS.length]
+        state.trackedTags.push({ tagPath, color: color ?? autoColor })
+      }),
+
+    removeTag: (tagPath) =>
+      set((state) => {
+        state.trackedTags = state.trackedTags.filter((t) => t.tagPath !== tagPath)
+      }),
+
+    updateTag: (tagPath, updates) =>
+      set((state) => {
+        const tag = state.trackedTags.find((t) => t.tagPath === tagPath)
+        if (tag) Object.assign(tag, updates)
+      }),
+
+    clearTags: () =>
+      set((state) => {
+        state.trackedTags = []
+      }),
+
+    setLogScale: (v) =>
+      set((state) => {
+        state.logScale = v
       }),
   })),
 )

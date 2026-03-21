@@ -1,4 +1,4 @@
-import { Play, Pause, Square } from 'lucide-react'
+import { Play, Pause, Square, LineChart } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
@@ -7,6 +7,7 @@ import {
 } from '@radix-ui/react-tooltip'
 import { useProjectStore } from '@/store'
 import { useSolverStore } from '@/store'
+import { useUIStore } from '@/store'
 import { cn } from '@/lib/utils'
 
 function SolverButton({
@@ -49,6 +50,7 @@ export function TopBar() {
   const projectName = useProjectStore((s) => s.project.name)
   const { solverState, startSolve, pauseSolve, stopSolve } = useSolverStore()
   const { status } = solverState
+  const { trendPanelOpen, toggleTrendPanel } = useUIStore()
 
   const isSolving = status === 'solving'
   const isPaused = status === 'paused'
@@ -101,6 +103,29 @@ export function TopBar() {
         >
           <Square size={16} />
         </SolverButton>
+
+        <div className="w-px h-5 bg-gray-200 mx-1" />
+
+        <TooltipProvider delayDuration={300}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={toggleTrendPanel}
+                className={cn(
+                  'w-8 h-8 rounded flex items-center justify-center transition-colors',
+                  trendPanelOpen
+                    ? 'bg-blue-100 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+                )}
+              >
+                <LineChart size={16} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="bg-gray-800 text-white text-xs px-2 py-1 rounded">
+              Trend Window
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {/* Right: User avatar */}

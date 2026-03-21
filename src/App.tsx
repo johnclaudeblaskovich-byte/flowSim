@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { TopBar } from '@/components/layout/TopBar'
 import { LeftNav } from '@/components/layout/LeftNav'
 import { FlowsheetTabs } from '@/components/layout/FlowsheetTabs'
@@ -8,12 +8,22 @@ import { FlowsheetCanvas } from '@/components/canvas/FlowsheetCanvas'
 import { UnitPalette } from '@/components/palette/UnitPalette'
 import { ProjectExplorer } from '@/components/panels/ProjectExplorer'
 import { FindDialog } from '@/components/canvas/FindDialog'
+import { TrendWindow } from '@/components/trend/TrendWindow'
 import { useUIStore } from '@/store'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
+import { historian } from '@/services/historian'
 
 function App() {
   const leftNavTab = useUIStore((s) => s.leftNavTab)
+  const trendPanelOpen = useUIStore((s) => s.trendPanelOpen)
   const [findOpen, setFindOpen] = useState(false)
+
+  // Initialise historian once on mount (degrades gracefully if IndexedDB unavailable)
+  useEffect(() => {
+    historian.init().catch(() => {
+      console.warn('[FlowSim] Historian init failed — trend data will not persist')
+    })
+  }, [])
 
   const handleSave = useCallback(() => {
     // Stub: project save will be implemented in a future phase
@@ -41,6 +51,13 @@ function App() {
             <FlowsheetCanvas />
             <AccessWindowPanel />
           </div>
+
+          {/* Trend panel — collapsible bottom panel */}
+          {trendPanelOpen && (
+            <div className="h-64 flex-none border-t border-gray-200 overflow-hidden">
+              <TrendWindow />
+            </div>
+          )}
         </div>
       </div>
       <StatusBar />
