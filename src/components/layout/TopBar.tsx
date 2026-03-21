@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Play, Pause, Square, LineChart, TableProperties } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
@@ -9,6 +10,11 @@ import {
 import { useProjectStore, useCanvasStore, useSolverStore, useUIStore } from '@/store'
 import { tagRegistry } from '@/services/tagRegistry'
 import { exportService } from '@/services/exportService'
+import { validateProject } from '@/services/projectValidator'
+import { solverService } from '@/services/solverService'
+import { toast } from '@/hooks/useToastStore'
+import { ValidationDialog } from '@/components/dialogs/ValidationDialog'
+import type { ValidationResult } from '@/services/projectValidator'
 import { cn } from '@/lib/utils'
 
 interface TopBarProps {
@@ -100,9 +106,31 @@ export function TopBar({ onOpen, onSave, onDxfOpen }: TopBarProps) {
   } = useUIStore()
   const activeFlowsheetId = useCanvasStore((s) => s.activeFlowsheetId)
 
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
+
   const isSolving = status === 'solving'
   const isPaused = status === 'paused'
   const isIdle = status === 'idle' || status === 'converged' || status === 'error'
+
+  function handleStartSolve() {
+    const result = validateProject(project)
+    if (!result.valid || result.warnings.length > 0) {
+      setValidationResult(result)
+      return
+    }
+    doSolve()
+  }
+
+  function doSolve() {
+    startSolve()
+    solverService.solve(project)
+    toast.info('Solving…', `Started solve for "${project.name}"`)
+  }
+
+  function handleSolveAnyway() {
+    setValidationResult(null)
+    doSolve()
+  }
 
   function handleSaveAs() {
     // Save As: identical to Save for now (uses current project name as filename)
@@ -239,7 +267,7 @@ export function TopBar({ onOpen, onSave, onDxfOpen }: TopBarProps) {
 
       {/* Center: Solver controls */}
       <div className="flex items-center gap-1">
-        <SolverButton onClick={startSolve} disabled={isSolving} label="Solve (F5)">
+        <SolverButton onClick={handleStartSolve} disabled={isSolving} label="Solve (F5)">
           <Play size={16} />
         </SolverButton>
         <SolverButton onClick={pauseSolve} disabled={!isSolving} label="Pause">
@@ -263,6 +291,16 @@ export function TopBar({ onOpen, onSave, onDxfOpen }: TopBarProps) {
       <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs font-medium">
         U
       </div>
+
+      {/* Pre-solve validation dialog */}
+      {validationResult && (
+        <ValidationDialog
+          open={true}
+          result={validationResult}
+          onClose={() => setValidationResult(null)}
+          onSolveAnyway={handleSolveAnyway}
+        />
+      )}
     </div>
   )
 }

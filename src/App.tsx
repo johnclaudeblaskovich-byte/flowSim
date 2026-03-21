@@ -19,6 +19,8 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { historian } from '@/services/historian'
 import { projectIO } from '@/services/projectIO'
 import { parseDXF } from '@/services/dxfImport'
+import { toast } from '@/hooks/useToastStore'
+import { ToastSystem } from '@/components/ui/ToastSystem'
 import type { DxfUnit } from '@/services/dxfImport'
 
 // ─── Auto-save constants ──────────────────────────────────────────────────────
@@ -108,9 +110,13 @@ function App() {
   // ── Save ──────────────────────────────────────────────────────────────────
   const handleSave = useCallback(() => {
     const { project, pgmSources, reactionFiles } = useProjectStore.getState()
-    projectIO.saveProject(project, pgmSources, reactionFiles).catch((err) => {
-      console.error('[FlowSim] Save failed:', err)
-    })
+    projectIO.saveProject(project, pgmSources, reactionFiles)
+      .then(() => toast.success('Project saved', `"${project.name}" saved as ${project.name}.fsim`))
+      .catch((err) => {
+        console.error('[FlowSim] Save failed:', err)
+        const msg = err instanceof Error ? err.message : String(err)
+        toast.error('Save failed', msg, msg)
+      })
   }, [])
 
   // ── Open ──────────────────────────────────────────────────────────────────
@@ -127,9 +133,11 @@ function App() {
       useProjectStore.getState().setPGMSources(result.pgmSources)
       useProjectStore.getState().setReactionFiles(result.reactionFiles)
       setAutosaveAvailable(false)
+      toast.success('Project loaded', `"${result.project.name}" opened successfully`)
     } catch (err) {
       console.error('[FlowSim] Load failed:', err)
-      alert(`Failed to open project: ${err instanceof Error ? err.message : String(err)}`)
+      const msg = err instanceof Error ? err.message : String(err)
+      toast.error('Failed to open project', msg, msg)
     }
     // Reset input so the same file can be re-opened
     e.target.value = ''
@@ -148,9 +156,11 @@ function App() {
       const { units } = parseDXF(text)
       setDxfUnits(units)
       setDxfDialogOpen(true)
+      toast.info('DXF loaded', `Found ${units.length} unit(s) in ${file.name}`)
     } catch (err) {
       console.error('[FlowSim] DXF parse failed:', err)
-      alert(`Failed to parse DXF: ${err instanceof Error ? err.message : String(err)}`)
+      const msg = err instanceof Error ? err.message : String(err)
+      toast.error('Failed to parse DXF', msg, msg)
     }
     e.target.value = ''
   }
@@ -161,6 +171,7 @@ function App() {
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden">
+      <ToastSystem />
       <TopBar onOpen={handleOpen} onSave={handleSave} onDxfOpen={handleDxfOpen} />
       <div className="flex flex-1 overflow-hidden">
         <LeftNav />

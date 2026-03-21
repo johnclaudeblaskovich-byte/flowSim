@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import { cn } from '@/lib/utils'
 import { UNIT_SYMBOLS } from '@/components/canvas/symbols'
@@ -30,18 +31,33 @@ function getSymbolColor(status: UnitSolveStatus, enabled: boolean): string {
 
 // ─── Node renderer ───────────────────────────────────────────────────────────
 
-export function UnitNodeRenderer({ data, selected }: NodeProps<UnitNodeType>) {
+export const UnitNodeRenderer = memo(function UnitNodeRenderer({ data, selected }: NodeProps<UnitNodeType>) {
   const { unit } = data
-  // Resolve symbol from symbolKey (allows custom symbol variant) or fall back to type
-  const symbolKey = (unit.symbolKey in UNIT_SYMBOLS ? unit.symbolKey : unit.type) as UnitModelType
-  const Symbol = UNIT_SYMBOLS[symbolKey]
-  const symbolColor = getSymbolColor(unit.solveStatus, unit.enabled)
+
+  // Memoize symbol lookup — avoids re-computation on unrelated re-renders
+  const Symbol = useMemo(() => {
+    const key = (unit.symbolKey in UNIT_SYMBOLS ? unit.symbolKey : unit.type) as UnitModelType
+    return UNIT_SYMBOLS[key]
+  }, [unit.symbolKey, unit.type])
+
+  // Memoize symbol color
+  const symbolColor = useMemo(
+    () => getSymbolColor(unit.solveStatus, unit.enabled),
+    [unit.solveStatus, unit.enabled],
+  )
+
   const isDisabled = !unit.enabled
   // FeederSink gets dashed border to indicate cross-page connector status
   const isCrossPage = unit.type === 'FeederSink'
 
+  // Error tooltip — native title attribute for simplicity
+  const errorTitle = unit.errorMessages.length > 0
+    ? unit.errorMessages.join('\n')
+    : undefined
+
   return (
     <div
+      title={errorTitle}
       className={cn(
         'relative bg-white rounded-lg border-2 min-w-[80px] min-h-[80px]',
         'flex flex-col items-center justify-center p-2 cursor-pointer select-none',
@@ -82,4 +98,4 @@ export function UnitNodeRenderer({ data, selected }: NodeProps<UnitNodeType>) {
       />
     </div>
   )
-}
+})
