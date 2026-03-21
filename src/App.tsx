@@ -9,6 +9,8 @@ import { UnitPalette } from '@/components/palette/UnitPalette'
 import { ProjectExplorer } from '@/components/panels/ProjectExplorer'
 import { FindDialog } from '@/components/canvas/FindDialog'
 import { TrendWindow } from '@/components/trend/TrendWindow'
+import { ResultsPanel } from '@/components/results/ResultsPanel'
+import { ReportBuilder } from '@/components/reports/ReportBuilder'
 import { useUIStore } from '@/store'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { historian } from '@/services/historian'
@@ -16,6 +18,9 @@ import { historian } from '@/services/historian'
 function App() {
   const leftNavTab = useUIStore((s) => s.leftNavTab)
   const trendPanelOpen = useUIStore((s) => s.trendPanelOpen)
+  const resultsPanelOpen = useUIStore((s) => s.resultsPanelOpen)
+  const reportBuilderOpen = useUIStore((s) => s.reportBuilderOpen)
+  const setReportBuilderOpen = useUIStore((s) => s.setReportBuilderOpen)
   const [findOpen, setFindOpen] = useState(false)
 
   // Initialise historian once on mount (degrades gracefully if IndexedDB unavailable)
@@ -60,10 +65,19 @@ function App() {
           )}
         </div>
       </div>
+
+      {/* Results panel — collapsible bottom dock */}
+      {resultsPanelOpen && <ResultsPanel />}
+
       <StatusBar />
 
       {/* Find dialog */}
       <FindDialog open={findOpen} onClose={() => setFindOpen(false)} />
+
+      {/* Report builder — full-screen modal */}
+      {reportBuilderOpen && (
+        <ReportBuilder open={reportBuilderOpen} onClose={() => setReportBuilderOpen(false)} />
+      )}
     </div>
   )
 }

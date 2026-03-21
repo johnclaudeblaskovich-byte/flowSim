@@ -178,6 +178,27 @@ export interface SolverSettings {
   tearMethod: 'DirectSubstitution' | 'Wegstein' | 'Broyden'
 }
 
+// ─── Reports ──────────────────────────────────────────────────────────────────
+export interface ReportField {
+  id: string
+  tagPath: string
+  displayName: string
+  unit?: string
+}
+
+export interface ReportSection {
+  id: string
+  name: string
+  fields: ReportField[]
+}
+
+export interface ReportConfig {
+  id: string
+  name: string
+  sections: ReportSection[]
+  createdAt: string
+}
+
 export interface Project {
   id: string
   name: string
@@ -189,6 +210,7 @@ export interface Project {
   selectedSpecies: string[]
   flowsheets: Flowsheet[]
   solverSettings: SolverSettings
+  reports?: ReportConfig[]
 }
 
 // ─── Solver State ─────────────────────────────────────────────────────────────

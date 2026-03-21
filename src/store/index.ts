@@ -369,6 +369,8 @@ interface UIStoreState {
   rightPanelTab: RightPanelTab
   accessWindowUnitId: string | null
   trendPanelOpen: boolean
+  resultsPanelOpen: boolean
+  reportBuilderOpen: boolean
   setLeftNavTab: (tab: LeftNavTab) => void
   setRightPanelOpen: (open: boolean) => void
   toggleRightPanel: () => void
@@ -376,6 +378,9 @@ interface UIStoreState {
   setAccessWindowUnitId: (id: string | null) => void
   setTrendPanelOpen: (open: boolean) => void
   toggleTrendPanel: () => void
+  setResultsPanelOpen: (open: boolean) => void
+  toggleResultsPanel: () => void
+  setReportBuilderOpen: (open: boolean) => void
 }
 
 export const useUIStore = create<UIStoreState>()(
@@ -385,6 +390,8 @@ export const useUIStore = create<UIStoreState>()(
     rightPanelTab: 'properties',
     accessWindowUnitId: null,
     trendPanelOpen: false,
+    resultsPanelOpen: false,
+    reportBuilderOpen: false,
 
     setLeftNavTab: (tab) =>
       set((state) => {
@@ -419,6 +426,21 @@ export const useUIStore = create<UIStoreState>()(
     toggleTrendPanel: () =>
       set((state) => {
         state.trendPanelOpen = !state.trendPanelOpen
+      }),
+
+    setResultsPanelOpen: (open) =>
+      set((state) => {
+        state.resultsPanelOpen = open
+      }),
+
+    toggleResultsPanel: () =>
+      set((state) => {
+        state.resultsPanelOpen = !state.resultsPanelOpen
+      }),
+
+    setReportBuilderOpen: (open) =>
+      set((state) => {
+        state.reportBuilderOpen = open
       }),
   })),
 )
