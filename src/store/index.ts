@@ -10,6 +10,7 @@ import type {
   UnitSolveStatus,
   AuditEntry,
   SolverState,
+  UnitPreferences,
 } from '@/types'
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
@@ -48,6 +49,8 @@ export function createDefaultProject(): Project {
 
 interface ProjectStoreState {
   project: Project
+  pgmSources: Record<string, string>
+  reactionFiles: Record<string, string>
   setProject: (project: Project) => void
   setProjectName: (name: string) => void
   setProjectDescription: (description: string) => void
@@ -67,11 +70,19 @@ interface ProjectStoreState {
   updateAnnotation: (flowsheetId: string, id: string, updates: Partial<Annotation>) => void
   removeAnnotation: (flowsheetId: string, id: string) => void
   touchModifiedAt: () => void
+  setPGMSource: (filename: string, src: string) => void
+  removePGMSource: (filename: string) => void
+  setPGMSources: (sources: Record<string, string>) => void
+  setReactionFile: (filename: string, src: string) => void
+  removeReactionFile: (filename: string) => void
+  setReactionFiles: (files: Record<string, string>) => void
 }
 
 export const useProjectStore = create<ProjectStoreState>()(
   immer((set) => ({
     project: createDefaultProject(),
+    pgmSources: {},
+    reactionFiles: {},
 
     setProject: (project) =>
       set((state) => {
@@ -232,6 +243,36 @@ export const useProjectStore = create<ProjectStoreState>()(
       set((state) => {
         state.project.modifiedAt = new Date().toISOString()
       }),
+
+    setPGMSource: (filename, src) =>
+      set((state) => {
+        state.pgmSources[filename] = src
+      }),
+
+    removePGMSource: (filename) =>
+      set((state) => {
+        delete state.pgmSources[filename]
+      }),
+
+    setPGMSources: (sources) =>
+      set((state) => {
+        state.pgmSources = sources
+      }),
+
+    setReactionFile: (filename, src) =>
+      set((state) => {
+        state.reactionFiles[filename] = src
+      }),
+
+    removeReactionFile: (filename) =>
+      set((state) => {
+        delete state.reactionFiles[filename]
+      }),
+
+    setReactionFiles: (files) =>
+      set((state) => {
+        state.reactionFiles = files
+      }),
   })),
 )
 
@@ -363,6 +404,12 @@ export const useSolverStore = create<SolverStoreState>()(
 type LeftNavTab = 'flowsheets' | 'units' | 'species' | 'reactions' | 'controls'
 type RightPanelTab = 'properties' | 'streams' | 'results' | 'audit'
 
+const DEFAULT_UNIT_PREFERENCES: UnitPreferences = {
+  temperature: '°C',
+  pressure: 'kPa',
+  flow: 't/h',
+}
+
 interface UIStoreState {
   leftNavTab: LeftNavTab
   rightPanelOpen: boolean
@@ -371,6 +418,8 @@ interface UIStoreState {
   trendPanelOpen: boolean
   resultsPanelOpen: boolean
   reportBuilderOpen: boolean
+  unitPreferences: UnitPreferences
+  newProjectWizardOpen: boolean
   setLeftNavTab: (tab: LeftNavTab) => void
   setRightPanelOpen: (open: boolean) => void
   toggleRightPanel: () => void
@@ -381,6 +430,8 @@ interface UIStoreState {
   setResultsPanelOpen: (open: boolean) => void
   toggleResultsPanel: () => void
   setReportBuilderOpen: (open: boolean) => void
+  setUnitPreferences: (prefs: UnitPreferences) => void
+  setNewProjectWizardOpen: (open: boolean) => void
 }
 
 export const useUIStore = create<UIStoreState>()(
@@ -392,6 +443,8 @@ export const useUIStore = create<UIStoreState>()(
     trendPanelOpen: false,
     resultsPanelOpen: false,
     reportBuilderOpen: false,
+    unitPreferences: { ...DEFAULT_UNIT_PREFERENCES },
+    newProjectWizardOpen: false,
 
     setLeftNavTab: (tab) =>
       set((state) => {
@@ -441,6 +494,16 @@ export const useUIStore = create<UIStoreState>()(
     setReportBuilderOpen: (open) =>
       set((state) => {
         state.reportBuilderOpen = open
+      }),
+
+    setUnitPreferences: (prefs) =>
+      set((state) => {
+        state.unitPreferences = prefs
+      }),
+
+    setNewProjectWizardOpen: (open) =>
+      set((state) => {
+        state.newProjectWizardOpen = open
       }),
   })),
 )

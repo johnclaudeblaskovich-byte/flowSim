@@ -213,6 +213,13 @@ export interface Project {
   reports?: ReportConfig[]
 }
 
+// ─── Unit Preferences ─────────────────────────────────────────────────────────
+export interface UnitPreferences {
+  temperature: '°C' | 'K' | '°F'
+  pressure: 'kPa' | 'bar' | 'psi' | 'atm'
+  flow: 't/h' | 'kg/s' | 't/d'
+}
+
 // ─── Solver State ─────────────────────────────────────────────────────────────
 export interface AuditEntry {
   id: string
