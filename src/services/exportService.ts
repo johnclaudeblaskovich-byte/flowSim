@@ -1,8 +1,9 @@
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
-import type { Project, ReportConfig } from '@/types'
+import type { Project, ReadinessReport, ReportConfig, SolverDiagnosticEvent, SolverUnitSummary } from '@/types'
 import { tagRegistry } from '@/services/tagRegistry'
 import { generateReport } from '@/services/reportGenerator'
+import { buildReadinessReport } from '@/services/readinessReport'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -256,6 +257,49 @@ class ExportService {
     })
 
     if (blob) saveAs(blob, `${flowsheetId}.png`)
+  }
+
+  async exportSolveDiagnostics(
+    project: Project,
+    diagnostics: SolverDiagnosticEvent[],
+    unitSummaries: SolverUnitSummary[] = [],
+  ): Promise<void> {
+    const readinessReport = buildReadinessReport(project)
+    const payload = {
+      project: {
+        name: project.name,
+        schemaVersion: project.schemaVersion,
+        modifiedAt: project.modifiedAt,
+        solveHistory: project.solveHistory,
+        readinessReports: project.readinessReports,
+      },
+      exportedAt: new Date().toISOString(),
+      readinessReport,
+      diagnostics,
+      unitSummaries,
+    }
+    saveAs(
+      new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }),
+      `${project.name}_SolveDiagnostics.json`,
+    )
+  }
+
+  async exportReadinessReport(project: Project, report?: ReadinessReport): Promise<void> {
+    const readinessReport = report ?? buildReadinessReport(project)
+    const payload = {
+      project: {
+        name: project.name,
+        schemaVersion: project.schemaVersion,
+        modifiedAt: project.modifiedAt,
+      },
+      exportedAt: new Date().toISOString(),
+      readinessReport,
+    }
+
+    saveAs(
+      new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }),
+      `${project.name}_SolveReadiness.json`,
+    )
   }
 }
 

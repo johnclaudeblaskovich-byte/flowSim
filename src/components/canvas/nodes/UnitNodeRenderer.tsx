@@ -4,7 +4,13 @@ import { cn } from '@/lib/utils'
 import { UNIT_SYMBOLS } from '@/components/canvas/symbols'
 import type { UnitNode, UnitSolveStatus, UnitModelType } from '@/types'
 
-export type UnitNodeType = Node<{ unit: UnitNode }, 'UnitNode'>
+export type UnitNodeType = Node<{
+  unit: UnitNode
+  validation?: {
+    severity: 'error' | 'warning'
+    messages: string[]
+  }
+}, 'UnitNode'>
 
 // ─── Color mappings ───────────────────────────────────────────────────────────
 
@@ -32,7 +38,7 @@ function getSymbolColor(status: UnitSolveStatus, enabled: boolean): string {
 // ─── Node renderer ───────────────────────────────────────────────────────────
 
 export const UnitNodeRenderer = memo(function UnitNodeRenderer({ data, selected }: NodeProps<UnitNodeType>) {
-  const { unit } = data
+  const { unit, validation } = data
 
   // Memoize symbol lookup — avoids re-computation on unrelated re-renders
   const Symbol = useMemo(() => {
@@ -54,15 +60,21 @@ export const UnitNodeRenderer = memo(function UnitNodeRenderer({ data, selected 
   const errorTitle = unit.errorMessages.length > 0
     ? unit.errorMessages.join('\n')
     : undefined
+  const validationTitle = validation?.messages.length ? validation.messages.join('\n') : undefined
+  const title = [errorTitle, validationTitle].filter(Boolean).join('\n')
 
   return (
     <div
-      title={errorTitle}
+      title={title || undefined}
       className={cn(
         'relative bg-white rounded-lg border-2 min-w-[80px] min-h-[80px]',
         'flex flex-col items-center justify-center p-2 cursor-pointer select-none',
         selected
           ? 'border-blue-500 shadow-md shadow-blue-100'
+          : validation?.severity === 'error'
+            ? 'border-red-400 shadow-sm shadow-red-100'
+            : validation?.severity === 'warning'
+              ? 'border-amber-400 shadow-sm shadow-amber-100'
           : isCrossPage
             ? 'border-dashed border-gray-400'
             : 'border-gray-200',
@@ -73,9 +85,26 @@ export const UnitNodeRenderer = memo(function UnitNodeRenderer({ data, selected 
       <span
         className={cn(
           'absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full',
-          STATUS_DOT[unit.solveStatus],
+          validation?.severity === 'error'
+            ? 'bg-red-500'
+            : validation?.severity === 'warning'
+              ? 'bg-amber-400'
+              : STATUS_DOT[unit.solveStatus],
         )}
       />
+
+      {validation && (
+        <span
+          className={cn(
+            'absolute top-1.5 left-1.5 px-1 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide',
+            validation.severity === 'error'
+              ? 'bg-red-100 text-red-700'
+              : 'bg-amber-100 text-amber-700',
+          )}
+        >
+          {validation.severity}
+        </span>
+      )}
 
       {/* SVG Symbol — 36×36 centered */}
       <Symbol size={36} color={symbolColor} />

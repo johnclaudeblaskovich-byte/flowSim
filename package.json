@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:frontend": "vite",
+    "dev:backend": "scripts\\start-backend.cmd",
+    "install:backend": "scripts\\install-backend.cmd",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
+import { CURRENT_PROJECT_SCHEMA_VERSION } from '@/services/projectSchema'
 import type {
   Project,
   Flowsheet,
@@ -10,6 +11,10 @@ import type {
   UnitSolveStatus,
   AuditEntry,
   SolverState,
+  SolverDiagnosticEvent,
+  ReadinessReport,
+  SolveHistoryEntry,
+  SolverUnitSummary,
   UnitPreferences,
 } from '@/types'
 
@@ -27,6 +32,7 @@ export function createDefaultProject(): Project {
     viewport: { x: 0, y: 0, zoom: 1 },
   }
   return {
+    schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
     id: crypto.randomUUID(),
     name: 'Untitled Project',
     description: '',
@@ -42,6 +48,8 @@ export function createDefaultProject(): Project {
       dampingFactor: 0.5,
       tearMethod: 'DirectSubstitution',
     },
+    solveHistory: [],
+    readinessReports: [],
   }
 }
 
@@ -70,12 +78,15 @@ interface ProjectStoreState {
   updateAnnotation: (flowsheetId: string, id: string, updates: Partial<Annotation>) => void
   removeAnnotation: (flowsheetId: string, id: string) => void
   touchModifiedAt: () => void
+  toggleUnitEnabled: (flowsheetId: string, nodeId: string) => void
   setPGMSource: (filename: string, src: string) => void
   removePGMSource: (filename: string) => void
   setPGMSources: (sources: Record<string, string>) => void
   setReactionFile: (filename: string, src: string) => void
   removeReactionFile: (filename: string) => void
   setReactionFiles: (files: Record<string, string>) => void
+  addSolveHistoryEntry: (entry: SolveHistoryEntry) => void
+  addReadinessReport: (report: ReadinessReport) => void
 }
 
 export const useProjectStore = create<ProjectStoreState>()(
@@ -239,6 +250,16 @@ export const useProjectStore = create<ProjectStoreState>()(
         state.project.modifiedAt = new Date().toISOString()
       }),
 
+    toggleUnitEnabled: (flowsheetId, nodeId) =>
+      set((state) => {
+        const fs = state.project.flowsheets.find((f) => f.id === flowsheetId)
+        if (fs) {
+          const node = fs.nodes.find((n) => n.id === nodeId)
+          if (node) node.enabled = !node.enabled
+        }
+        state.project.modifiedAt = new Date().toISOString()
+      }),
+
     touchModifiedAt: () =>
       set((state) => {
         state.project.modifiedAt = new Date().toISOString()
@@ -272,6 +293,18 @@ export const useProjectStore = create<ProjectStoreState>()(
     setReactionFiles: (files) =>
       set((state) => {
         state.reactionFiles = files
+      }),
+
+    addSolveHistoryEntry: (entry) =>
+      set((state) => {
+        state.project.solveHistory = [entry, ...state.project.solveHistory].slice(0, 25)
+        state.project.modifiedAt = new Date().toISOString()
+      }),
+
+    addReadinessReport: (report) =>
+      set((state) => {
+        state.project.readinessReports = [report, ...state.project.readinessReports].slice(0, 20)
+        state.project.modifiedAt = new Date().toISOString()
       }),
   })),
 )
@@ -331,6 +364,9 @@ interface SolverStoreState {
   setSolverStatus: (status: SolverStatus) => void
   setUnitStatus: (unitTag: string, status: UnitSolveStatus) => void
   addAuditEntry: (entry: AuditEntry) => void
+  addDiagnosticEvent: (event: SolverDiagnosticEvent) => void
+  setActiveSolveId: (solveId: string | null) => void
+  setUnitSummaries: (summaries: SolverUnitSummary[]) => void
   clearAudit: () => void
   updateSolverProgress: (iteration: number, maxError: number, elapsedMs: number) => void
 }
@@ -340,8 +376,11 @@ const defaultSolverState: SolverState = {
   iteration: 0,
   maxError: 0,
   elapsedMs: 0,
+  activeSolveId: null,
   unitStatuses: {},
   auditErrors: [],
+  diagnostics: [],
+  unitSummaries: [],
 }
 
 export const useSolverStore = create<SolverStoreState>()(
@@ -355,6 +394,8 @@ export const useSolverStore = create<SolverStoreState>()(
         state.solverState.maxError = 0
         state.solverState.elapsedMs = 0
         state.solverState.auditErrors = []
+        state.solverState.diagnostics = []
+        state.solverState.unitSummaries = []
       }),
 
     pauseSolve: () =>
@@ -385,9 +426,26 @@ export const useSolverStore = create<SolverStoreState>()(
         state.solverState.auditErrors.push(entry)
       }),
 
+    addDiagnosticEvent: (event) =>
+      set((state) => {
+        state.solverState.diagnostics.push(event)
+      }),
+
+    setActiveSolveId: (solveId) =>
+      set((state) => {
+        state.solverState.activeSolveId = solveId
+      }),
+
+    setUnitSummaries: (summaries) =>
+      set((state) => {
+        state.solverState.unitSummaries = summaries
+      }),
+
     clearAudit: () =>
       set((state) => {
         state.solverState.auditErrors = []
+        state.solverState.diagnostics = []
+        state.solverState.unitSummaries = []
       }),
 
     updateSolverProgress: (iteration, maxError, elapsedMs) =>
@@ -415,8 +473,10 @@ interface UIStoreState {
   rightPanelOpen: boolean
   rightPanelTab: RightPanelTab
   accessWindowUnitId: string | null
+  accessWindowEdgeId: string | null
   trendPanelOpen: boolean
   resultsPanelOpen: boolean
+  resultsPanelTab: 'selection' | 'streams' | 'units' | 'balance' | 'audit' | 'diagnostics' | 'connectivity' | 'readiness'
   reportBuilderOpen: boolean
   unitPreferences: UnitPreferences
   newProjectWizardOpen: boolean
@@ -425,13 +485,19 @@ interface UIStoreState {
   toggleRightPanel: () => void
   setRightPanelTab: (tab: RightPanelTab) => void
   setAccessWindowUnitId: (id: string | null) => void
+  setAccessWindowEdgeId: (id: string | null) => void
   setTrendPanelOpen: (open: boolean) => void
   toggleTrendPanel: () => void
   setResultsPanelOpen: (open: boolean) => void
   toggleResultsPanel: () => void
+  setResultsPanelTab: (tab: 'selection' | 'streams' | 'units' | 'balance' | 'audit' | 'diagnostics' | 'connectivity' | 'readiness') => void
   setReportBuilderOpen: (open: boolean) => void
   setUnitPreferences: (prefs: UnitPreferences) => void
   setNewProjectWizardOpen: (open: boolean) => void
+  setupWindowOpen: boolean
+  setSetupWindowOpen: (open: boolean) => void
+  exampleProjectDialogOpen: boolean
+  setExampleProjectDialogOpen: (open: boolean) => void
 }
 
 export const useUIStore = create<UIStoreState>()(
@@ -440,11 +506,15 @@ export const useUIStore = create<UIStoreState>()(
     rightPanelOpen: false,
     rightPanelTab: 'properties',
     accessWindowUnitId: null,
+    accessWindowEdgeId: null,
     trendPanelOpen: false,
     resultsPanelOpen: false,
+    resultsPanelTab: 'selection',
     reportBuilderOpen: false,
     unitPreferences: { ...DEFAULT_UNIT_PREFERENCES },
     newProjectWizardOpen: false,
+    setupWindowOpen: false,
+    exampleProjectDialogOpen: false,
 
     setLeftNavTab: (tab) =>
       set((state) => {
@@ -469,6 +539,13 @@ export const useUIStore = create<UIStoreState>()(
     setAccessWindowUnitId: (id) =>
       set((state) => {
         state.accessWindowUnitId = id
+        if (id) state.accessWindowEdgeId = null
+      }),
+
+    setAccessWindowEdgeId: (id) =>
+      set((state) => {
+        state.accessWindowEdgeId = id
+        if (id) state.accessWindowUnitId = null
       }),
 
     setTrendPanelOpen: (open) =>
@@ -491,6 +568,11 @@ export const useUIStore = create<UIStoreState>()(
         state.resultsPanelOpen = !state.resultsPanelOpen
       }),
 
+    setResultsPanelTab: (tab) =>
+      set((state) => {
+        state.resultsPanelTab = tab
+      }),
+
     setReportBuilderOpen: (open) =>
       set((state) => {
         state.reportBuilderOpen = open
@@ -504,6 +586,16 @@ export const useUIStore = create<UIStoreState>()(
     setNewProjectWizardOpen: (open) =>
       set((state) => {
         state.newProjectWizardOpen = open
+      }),
+
+    setSetupWindowOpen: (open) =>
+      set((state) => {
+        state.setupWindowOpen = open
+      }),
+
+    setExampleProjectDialogOpen: (open) =>
+      set((state) => {
+        state.exampleProjectDialogOpen = open
       }),
   })),
 )

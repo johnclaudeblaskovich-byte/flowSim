@@ -11,6 +11,7 @@ import { useProjectStore, useCanvasStore, useSolverStore, useUIStore } from '@/s
 import { tagRegistry } from '@/services/tagRegistry'
 import { exportService } from '@/services/exportService'
 import { validateProject } from '@/services/projectValidator'
+import { buildReadinessReport } from '@/services/readinessReport'
 import { solverService } from '@/services/solverService'
 import { toast } from '@/hooks/useToastStore'
 import { ValidationDialog } from '@/components/dialogs/ValidationDialog'
@@ -21,6 +22,7 @@ interface TopBarProps {
   onOpen?: () => void
   onSave?: () => void
   onDxfOpen?: () => void
+  onOpenExample?: () => void
 }
 
 function SolverButton({
@@ -94,8 +96,9 @@ function IconButton({
   )
 }
 
-export function TopBar({ onOpen, onSave, onDxfOpen }: TopBarProps) {
+export function TopBar({ onOpen, onSave, onDxfOpen, onOpenExample }: TopBarProps) {
   const project = useProjectStore((s) => s.project)
+  const addReadinessReport = useProjectStore((s) => s.addReadinessReport)
   const { solverState, startSolve, pauseSolve, stopSolve } = useSolverStore()
   const { status } = solverState
   const {
@@ -113,6 +116,7 @@ export function TopBar({ onOpen, onSave, onDxfOpen }: TopBarProps) {
   const isIdle = status === 'idle' || status === 'converged' || status === 'error'
 
   function handleStartSolve() {
+    addReadinessReport(buildReadinessReport(project))
     const result = validateProject(project)
     if (!result.valid || result.warnings.length > 0) {
       setValidationResult(result)
@@ -159,6 +163,12 @@ export function TopBar({ onOpen, onSave, onDxfOpen }: TopBarProps) {
     exportService.exportFlowsheetPNG(fsId)
   }
 
+  function handleExportReadiness() {
+    const report = buildReadinessReport(project)
+    addReadinessReport(report)
+    exportService.exportReadinessReport(project, report)
+  }
+
   return (
     <div className="flex items-center justify-between px-4 h-12 bg-white border-b border-gray-200 shadow-sm flex-none">
       {/* Left: File menu + Logo + project name */}
@@ -190,6 +200,12 @@ export function TopBar({ onOpen, onSave, onDxfOpen }: TopBarProps) {
               >
                 <span>Open…</span>
                 <span className="text-gray-400 text-[10px]">Ctrl+O</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                className="px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 cursor-pointer outline-none"
+                onSelect={() => onOpenExample?.()}
+              >
+                Open Example Project…
               </DropdownMenu.Item>
               <DropdownMenu.Item
                 className="px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 cursor-pointer outline-none flex items-center justify-between"
@@ -227,6 +243,12 @@ export function TopBar({ onOpen, onSave, onDxfOpen }: TopBarProps) {
                 onSelect={handleExportCSV}
               >
                 Stream Data (CSV)
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                className="px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 cursor-pointer outline-none flex items-center gap-2"
+                onSelect={handleExportReadiness}
+              >
+                Solve Readiness (JSON)
               </DropdownMenu.Item>
               <DropdownMenu.Separator className="my-1 border-t border-gray-100" />
               <DropdownMenu.Item

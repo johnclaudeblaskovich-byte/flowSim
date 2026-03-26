@@ -13,6 +13,8 @@ import { ResultsPanel } from '@/components/results/ResultsPanel'
 import { ReportBuilder } from '@/components/reports/ReportBuilder'
 import { NewProjectWizard } from '@/components/dialogs/NewProjectWizard'
 import { DxfMappingDialog } from '@/components/dialogs/DxfMappingDialog'
+import { SetupWindow } from '@/components/dialogs/SetupWindow'
+import { ExampleProjectDialog } from '@/components/dialogs/ExampleProjectDialog'
 import { ReactionFileEditor } from '@/components/editors/ReactionFileEditor'
 import { useUIStore, useProjectStore } from '@/store'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
@@ -36,6 +38,9 @@ function App() {
   const resultsPanelOpen = useUIStore((s) => s.resultsPanelOpen)
   const reportBuilderOpen = useUIStore((s) => s.reportBuilderOpen)
   const setReportBuilderOpen = useUIStore((s) => s.setReportBuilderOpen)
+  const setSetupWindowOpen = useUIStore((s) => s.setSetupWindowOpen)
+  const exampleProjectDialogOpen = useUIStore((s) => s.exampleProjectDialogOpen)
+  const setExampleProjectDialogOpen = useUIStore((s) => s.setExampleProjectDialogOpen)
 
   const [findOpen, setFindOpen] = useState(false)
   const [autosaveAvailable, setAutosaveAvailable] = useState(false)
@@ -167,18 +172,62 @@ function App() {
 
   const handleFindOpen = useCallback(() => setFindOpen(true), [])
 
+  async function handleExampleLoad(file: File, name: string) {
+    try {
+      const result = await projectIO.loadProject(file)
+      useProjectStore.getState().setProject(result.project)
+      useProjectStore.getState().setPGMSources(result.pgmSources)
+      useProjectStore.getState().setReactionFiles(result.reactionFiles)
+      setAutosaveAvailable(false)
+      toast.success('Project loaded', `"${name}" opened successfully`)
+    } catch (err) {
+      console.error('[FlowSim] Example load failed:', err)
+      const msg = err instanceof Error ? err.message : String(err)
+      toast.error('Failed to open example', msg, msg)
+    }
+  }
+
   useKeyboardShortcuts({ onFindOpen: handleFindOpen, onSave: handleSave, onOpen: handleOpen })
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden">
       <ToastSystem />
-      <TopBar onOpen={handleOpen} onSave={handleSave} onDxfOpen={handleDxfOpen} />
+      <TopBar
+        onOpen={handleOpen}
+        onSave={handleSave}
+        onDxfOpen={handleDxfOpen}
+        onOpenExample={() => setExampleProjectDialogOpen(true)}
+      />
       <div className="flex flex-1 overflow-hidden">
-        <LeftNav />
+        <LeftNav onSettingsClick={() => setSetupWindowOpen(true)} />
 
         {/* Left panel — project explorer or unit palette */}
         {leftNavTab === 'flowsheets' && <ProjectExplorer />}
         {leftNavTab === 'units' && <UnitPalette />}
+        {leftNavTab === 'species' && (
+          <div className="w-64 flex-none border-r border-gray-200 bg-white flex flex-col">
+            <div className="px-4 py-2 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Species
+            </div>
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-sm text-gray-400 text-center px-4">
+                Species management coming soon.
+              </p>
+            </div>
+          </div>
+        )}
+        {leftNavTab === 'controls' && (
+          <div className="w-64 flex-none border-r border-gray-200 bg-white flex flex-col">
+            <div className="px-4 py-2 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Controls
+            </div>
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-sm text-gray-400 text-center px-4">
+                PGM/Controller management coming soon.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Main content column */}
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -256,6 +305,16 @@ function App() {
         open={dxfDialogOpen}
         units={dxfUnits}
         onClose={() => setDxfDialogOpen(false)}
+      />
+
+      {/* Setup / Component Toggle Window */}
+      <SetupWindow />
+
+      {/* Example Project Browser */}
+      <ExampleProjectDialog
+        open={exampleProjectDialogOpen}
+        onClose={() => setExampleProjectDialogOpen(false)}
+        onLoad={handleExampleLoad}
       />
     </div>
   )

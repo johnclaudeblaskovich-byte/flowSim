@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -43,6 +44,40 @@ UNIT_SOLVERS: dict[str, Any] = {
     "Cyclone": solve_cyclone,
     "Screen": solve_screen,
 }
+
+
+def _topological_sort(nodes: list[dict], edges: list[dict]) -> list[dict]:
+    """Return nodes in topological order using sourceUnitTag → destUnitTag edges."""
+    in_degree: dict[str, int] = {node.get("tag", ""): 0 for node in nodes}
+    adjacency: dict[str, list[str]] = {node.get("tag", ""): [] for node in nodes}
+    node_by_tag = {node.get("tag", ""): node for node in nodes}
+
+    for edge in edges:
+        src = edge.get("sourceUnitTag", "")
+        dst = edge.get("destUnitTag", "")
+        if not src or not dst:
+            continue
+        adjacency.setdefault(src, []).append(dst)
+        in_degree[dst] = in_degree.get(dst, 0) + 1
+
+    queue = [tag for tag, degree in in_degree.items() if degree == 0]
+    ordered: list[dict] = []
+
+    while queue:
+        tag = queue.pop(0)
+        node = node_by_tag.get(tag)
+        if node is not None:
+            ordered.append(node)
+        for neighbour in adjacency.get(tag, []):
+            in_degree[neighbour] -= 1
+            if in_degree[neighbour] == 0:
+                queue.append(neighbour)
+
+    if len(ordered) != len(nodes):
+        logger.warning("Flowsheet graph contains a cycle or disconnected tags; falling back to payload order")
+        return nodes
+
+    return ordered
 
 
 def _stream_from_dict(d: dict) -> StreamDataPy:
@@ -90,6 +125,42 @@ def _stream_to_dict(s: StreamDataPy) -> dict:
     return d
 
 
+def _validate_flowsheet_payload(nodes: list[dict], edges: list[dict]) -> list[str]:
+    """Return protocol validation errors for an incoming solve payload."""
+    errors: list[str] = []
+    node_tags = {node.get("tag", "") for node in nodes if node.get("tag")}
+
+    if not nodes:
+        errors.append("Flowsheet has no nodes.")
+
+    for node in nodes:
+        if not node.get("tag"):
+            errors.append("Node is missing required field 'tag'.")
+        if not node.get("type"):
+            errors.append(f"Node '{node.get('tag', '')}' is missing required field 'type'.")
+
+    for edge in edges:
+        src = edge.get("sourceUnitTag") or edge.get("source", "")
+        dst = edge.get("destUnitTag") or edge.get("target", "")
+        if not src:
+            errors.append("Edge is missing required field 'sourceUnitTag'.")
+        elif src not in node_tags:
+            errors.append(f"Edge references unknown source unit '{src}'.")
+        if not dst:
+            errors.append("Edge is missing required field 'destUnitTag'.")
+        elif dst not in node_tags:
+            errors.append(f"Edge references unknown destination unit '{dst}'.")
+
+    return errors
+
+
+def _event_base(solve_id: str) -> dict[str, str]:
+    return {
+        "solveId": solve_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 # ─── WebSocket solver endpoint ────────────────────────────────────────────────
 
 @app.websocket("/ws/solve/{job_id}")
@@ -107,38 +178,71 @@ async def solve_websocket(websocket: WebSocket, job_id: str):
     await websocket.accept()
     logger.info("WebSocket connection accepted: job_id=%s", job_id)
     thermo = ThermoHelper()
+    solve_id = job_id
 
     try:
         raw = await websocket.receive_text()
         payload = json.loads(raw)
 
         if payload.get("type") != "solve":
-            await websocket.send_json({"type": "error", "message": "Expected type='solve'"})
+            await websocket.send_json({
+                **_event_base(solve_id),
+                "type": "error",
+                "message": "Expected type='solve'",
+            })
             return
 
         flowsheet = payload.get("flowsheet", {})
         nodes: list[dict] = flowsheet.get("nodes", [])
         edges: list[dict] = flowsheet.get("edges", [])
+        validation_errors = _validate_flowsheet_payload(nodes, edges)
+        if validation_errors:
+            await websocket.send_json({
+                **_event_base(solve_id),
+                "type": "error",
+                "message": validation_errors[0],
+                "detail": " ".join(validation_errors),
+            })
+            return
 
-        # Build a map of edge streams by source unit tag
+        ordered_nodes = _topological_sort(nodes, edges)
+
+        # Build a map of edge streams by destination unit tag so unit inputs are gathered correctly.
         edge_streams: dict[str, list[StreamDataPy]] = {}
         for edge in edges:
-            src = edge.get("sourceUnitTag") or edge.get("source", "")
+            dst = edge.get("destUnitTag") or edge.get("target", "")
             if edge.get("stream"):
                 stream = _stream_from_dict(edge["stream"])
-                edge_streams.setdefault(src, []).append(stream)
+                edge_streams.setdefault(dst, []).append(stream)
 
         max_error = 0.0
         solved_count = 0
 
-        for node in nodes:
+        for node in ordered_nodes:
             unit_type: str = node.get("type", "")
             unit_tag: str = node.get("tag", "")
             config: dict = node.get("config", {})
 
+            if unit_type == "Feeder":
+                await websocket.send_json({
+                    **_event_base(solve_id),
+                    "type": "status",
+                    "message": f"Using predefined feed for {unit_tag}",
+                })
+                continue
+
+            if unit_type == "FeederSink":
+                await websocket.send_json({
+                    **_event_base(solve_id),
+                    "type": "status",
+                    "message": f"Receiving sink flow at {unit_tag}",
+                })
+                continue
+
             solver_fn = UNIT_SOLVERS.get(unit_type)
             if solver_fn is None:
                 await websocket.send_json({
+                    **_event_base(solve_id),
                     "type": "status",
                     "message": f"No solver for unit type '{unit_type}' ({unit_tag}) — skipping",
                 })
@@ -147,6 +251,7 @@ async def solve_websocket(websocket: WebSocket, job_id: str):
             input_streams = edge_streams.get(unit_tag, [])
 
             await websocket.send_json({
+                **_event_base(solve_id),
                 "type": "status",
                 "message": f"Solving {unit_tag} ({unit_type})",
             })
@@ -157,22 +262,61 @@ async def solve_websocket(websocket: WebSocket, job_id: str):
                 )
                 serialised = {k: _stream_to_dict(v) for k, v in result_streams.items()}
                 await websocket.send_json({
+                    **_event_base(solve_id),
                     "type": "result",
                     "unitTag": unit_tag,
                     "streams": serialised,
                 })
+
+                # Route this unit's outputs onto downstream edges so later units receive them as inputs.
+                outgoing_edges = [
+                    edge for edge in edges
+                    if (edge.get("sourceUnitTag") or edge.get("source", "")) == unit_tag
+                ]
+                output_streams = [
+                    (name, stream)
+                    for name, stream in result_streams.items()
+                    if not str(name).startswith("_")
+                ]
+                for index, edge in enumerate(outgoing_edges):
+                    dst = edge.get("destUnitTag") or edge.get("target", "")
+                    if not dst:
+                        continue
+                    source_port_key = edge.get("sourcePortKey")
+                    matched_output = None
+                    if source_port_key:
+                        matched_output = next(
+                            ((name, stream) for name, stream in output_streams if name == source_port_key),
+                            None,
+                        )
+                    if matched_output is not None:
+                        routed_stream = matched_output[1]
+                    elif index < len(output_streams):
+                        routed_stream = output_streams[index][1]
+                    elif output_streams:
+                        routed_stream = output_streams[-1][1]
+                    else:
+                        routed_stream = thermo.make_empty_stream()
+
+                    routed_stream.sourceUnitTag = unit_tag
+                    routed_stream.destUnitTag = dst
+                    edge_streams.setdefault(dst, []).append(routed_stream)
+
                 solved_count += 1
             except Exception as exc:
                 logger.exception("Error solving %s", unit_tag)
                 await websocket.send_json({
+                    **_event_base(solve_id),
                     "type": "error",
                     "message": f"Error solving {unit_tag}: {exc}",
+                    "unitTag": unit_tag,
                 })
 
             # Yield control briefly so the event loop stays responsive
             await asyncio.sleep(0)
 
         await websocket.send_json({
+            **_event_base(solve_id),
             "type": "done",
             "iteration": 1,
             "maxError": max_error,
@@ -184,7 +328,11 @@ async def solve_websocket(websocket: WebSocket, job_id: str):
     except Exception as exc:
         logger.exception("Unhandled error in solver WebSocket")
         try:
-            await websocket.send_json({"type": "error", "message": str(exc)})
+            await websocket.send_json({
+                **_event_base(solve_id),
+                "type": "error",
+                "message": str(exc),
+            })
         except Exception:
             pass
 
