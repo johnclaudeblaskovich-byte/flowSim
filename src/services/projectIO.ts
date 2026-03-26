@@ -1,6 +1,7 @@
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import type { Project } from '@/types'
+import { CURRENT_PROJECT_SCHEMA_VERSION, migrateProject } from '@/services/projectSchema'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -22,9 +23,13 @@ class ProjectIO {
     reactionFiles: Record<string, string>,
   ): Promise<void> {
     const zip = new JSZip()
+    const projectToSave: Project = {
+      ...project,
+      schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
+    }
 
     // project.json — main project data
-    zip.file('project.json', JSON.stringify(project, null, 2))
+    zip.file('project.json', JSON.stringify(projectToSave, null, 2))
 
     // PGM scripts: controls/{filename}
     for (const [filename, source] of Object.entries(pgmSources)) {
@@ -37,7 +42,7 @@ class ProjectIO {
     }
 
     // config/species.json — selected species ID list
-    zip.file('config/species.json', JSON.stringify(project.selectedSpecies, null, 2))
+    zip.file('config/species.json', JSON.stringify(projectToSave.selectedSpecies, null, 2))
 
     const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' })
     const filename = `${project.name.replace(/[^a-zA-Z0-9_\- ]/g, '_')}.fsim`
@@ -53,7 +58,8 @@ class ProjectIO {
     // Parse project.json
     const projectJson = await zip.file('project.json')?.async('string')
     if (!projectJson) throw new Error('Invalid .fsim file: missing project.json')
-    const project = JSON.parse(projectJson) as Project
+    const rawProject = JSON.parse(projectJson) as unknown
+    const project = migrateProject(rawProject)
 
     // Load PGM scripts from controls/
     const pgmSources: Record<string, string> = {}

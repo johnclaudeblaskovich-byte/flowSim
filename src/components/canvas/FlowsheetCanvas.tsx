@@ -30,6 +30,8 @@ import { TitleBlock } from './annotations/TitleBlock'
 import { CanvasToolbar } from './CanvasToolbar'
 import { SymbolPickerDialog } from './symbols/SymbolPickerDialog'
 import { generateTag } from '@/lib/tagUtils'
+import { getOutputRoutes } from '@/lib/routing'
+import { validateProject } from '@/services/projectValidator'
 import type { UnitNode, PipeEdge, UnitModelType, Annotation } from '@/types'
 
 // ─── RF type aliases ──────────────────────────────────────────────────────────
@@ -47,12 +49,17 @@ const NO_STREAM_UNITS: UnitModelType[] = [
 ]
 
 // ─── Conversion helpers ───────────────────────────────────────────────────────
-function toRFNode(unit: UnitNode): AppNode {
+type ValidationBadge = {
+  severity: 'error' | 'warning'
+  messages: string[]
+}
+
+function toRFNode(unit: UnitNode, validation?: ValidationBadge): AppNode {
   return {
     id: unit.id,
     type: 'UnitNode' as const,
     position: unit.position,
-    data: { unit },
+    data: { unit, validation },
   }
 }
 
@@ -82,7 +89,7 @@ function toRFAnnotation(ann: Annotation): AppNode {
   }
 }
 
-function toRFEdge(pipe: PipeEdge): AppPipeEdge {
+function toRFEdge(pipe: PipeEdge, validation?: ValidationBadge): AppPipeEdge {
   return {
     id: pipe.id,
     source: pipe.source,
@@ -90,7 +97,7 @@ function toRFEdge(pipe: PipeEdge): AppPipeEdge {
     sourceHandle: pipe.sourceHandle ?? null,
     targetHandle: pipe.targetHandle ?? null,
     type: 'PipeEdge' as const,
-    data: { pipe },
+    data: { pipe, validation },
   }
 }
 
@@ -107,7 +114,7 @@ function FlowsheetCanvasInner() {
     useProjectStore()
   const { activeFlowsheetId, setSelectedNodeId, setSelectedEdgeId, clearSelection } =
     useCanvasStore()
-  const { setRightPanelOpen, setAccessWindowUnitId } = useUIStore()
+  const { setRightPanelOpen, setAccessWindowUnitId, setAccessWindowEdgeId, setResultsPanelOpen, setResultsPanelTab } = useUIStore()
   const { screenToFlowPosition } = useReactFlow()
 
   const [nodes, setNodes] = useNodesState<AppNode>([])
@@ -116,21 +123,63 @@ function FlowsheetCanvasInner() {
   const [ctxMenu, setCtxMenu] = useState<CtxMenu | null>(null)
   const [symbolPickerNodeId, setSymbolPickerNodeId] = useState<string | null>(null)
   const ctxRef = useRef<HTMLDivElement>(null)
+  const validationResult = useMemo(() => validateProject(project), [project])
+
+  const validationMaps = useMemo(() => {
+    const nodeMap = new Map<string, ValidationBadge>()
+    const edgeMap = new Map<string, ValidationBadge>()
+
+    for (const issue of validationResult.errors) {
+      if (issue.nodeId) {
+        const existing = nodeMap.get(issue.nodeId)
+        nodeMap.set(issue.nodeId, {
+          severity: 'error',
+          messages: [...(existing?.messages ?? []), issue.msg],
+        })
+      }
+      if (issue.edgeId) {
+        const existing = edgeMap.get(issue.edgeId)
+        edgeMap.set(issue.edgeId, {
+          severity: 'error',
+          messages: [...(existing?.messages ?? []), issue.msg],
+        })
+      }
+    }
+
+    for (const issue of validationResult.warnings) {
+      if (issue.nodeId && !nodeMap.has(issue.nodeId)) {
+        const existing = nodeMap.get(issue.nodeId)
+        nodeMap.set(issue.nodeId, {
+          severity: existing?.severity ?? 'warning',
+          messages: [...(existing?.messages ?? []), issue.msg],
+        })
+      }
+      if (issue.edgeId && !edgeMap.has(issue.edgeId)) {
+        const existing = edgeMap.get(issue.edgeId)
+        edgeMap.set(issue.edgeId, {
+          severity: existing?.severity ?? 'warning',
+          messages: [...(existing?.messages ?? []), issue.msg],
+        })
+      }
+    }
+
+    return { nodeMap, edgeMap }
+  }, [validationResult])
 
   // ── Initialize RF state from store when active flowsheet changes ────────────
   useEffect(() => {
     const fs = project.flowsheets.find((f) => f.id === activeFlowsheetId)
     if (fs) {
-      const unitNodes = fs.nodes.map(toRFNode)
+      const unitNodes = fs.nodes.map((node) => toRFNode(node, validationMaps.nodeMap.get(node.id)))
       const annNodes = fs.annotations.map(toRFAnnotation)
       setNodes([...unitNodes, ...annNodes])
-      setEdges(fs.edges.map(toRFEdge))
+      setEdges(fs.edges.map((edge) => toRFEdge(edge, validationMaps.edgeMap.get(edge.id))))
     } else {
       setNodes([])
       setEdges([])
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFlowsheetId])
+  }, [activeFlowsheetId, project, validationMaps])
 
   // ── Ctrl+M toggles minimap ─────────────────────────────────────────────────
   useEffect(() => {
@@ -239,6 +288,11 @@ function FlowsheetCanvasInner() {
         suffix++
       }
 
+      const sourceRoutes = getOutputRoutes(sourceUnit.type)
+      const nextRoute = sourceRoutes[
+        existing.filter((e) => e.source === connection.source).length
+      ]
+
       const newPipe: PipeEdge = {
         id: crypto.randomUUID(),
         tag: finalTag,
@@ -246,6 +300,8 @@ function FlowsheetCanvasInner() {
         target: connection.target,
         sourceHandle: connection.sourceHandle ?? undefined,
         targetHandle: connection.targetHandle ?? undefined,
+        sourcePortKey: connection.sourceHandle ?? nextRoute,
+        targetPortKey: connection.targetHandle ?? undefined,
         config: { simplified: true },
       }
       storeAddEdge(activeFlowsheetId, newPipe)
@@ -293,8 +349,10 @@ function FlowsheetCanvasInner() {
     (_e, node) => {
       setAccessWindowUnitId(node.id)
       setRightPanelOpen(true)
+      setResultsPanelOpen(true)
+      setResultsPanelTab('selection')
     },
-    [setAccessWindowUnitId, setRightPanelOpen],
+    [setAccessWindowUnitId, setRightPanelOpen, setResultsPanelOpen, setResultsPanelTab],
   )
 
   const onEdgeClick: EdgeMouseHandler<AppPipeEdge> = useCallback(
@@ -302,6 +360,17 @@ function FlowsheetCanvasInner() {
       setSelectedEdgeId(edge.id)
     },
     [setSelectedEdgeId],
+  )
+
+  const onEdgeDoubleClick: EdgeMouseHandler<AppPipeEdge> = useCallback(
+    (_e, edge) => {
+      setSelectedEdgeId(edge.id)
+      setAccessWindowEdgeId(edge.id)
+      setRightPanelOpen(true)
+      setResultsPanelOpen(true)
+      setResultsPanelTab('selection')
+    },
+    [setSelectedEdgeId, setAccessWindowEdgeId, setRightPanelOpen, setResultsPanelOpen, setResultsPanelTab],
   )
 
   const onPaneClick = useCallback(() => {
@@ -385,7 +454,13 @@ function FlowsheetCanvasInner() {
     setNodes((nds) =>
       nds.map((n) =>
         n.id === ctxMenu.nodeId
-          ? { ...n, data: { unit: { ...n.data.unit, enabled: nextEnabled, solveStatus: nextStatus } } }
+          ? {
+              ...n,
+              data: {
+                ...n.data,
+                unit: { ...n.data.unit, enabled: nextEnabled, solveStatus: nextStatus },
+              },
+            }
           : n,
       ),
     )
@@ -453,7 +528,13 @@ function FlowsheetCanvasInner() {
     setNodes((nds) =>
       nds.map((n) =>
         n.id === symbolPickerNodeId
-          ? { ...n, data: { unit: { ...n.data.unit, symbolKey } } }
+          ? {
+              ...n,
+              data: {
+                ...n.data,
+                unit: { ...n.data.unit, symbolKey },
+              },
+            }
           : n,
       ),
     )
@@ -486,6 +567,7 @@ function FlowsheetCanvasInner() {
         onNodeClick={onNodeClick}
         onNodeDoubleClick={onNodeDoubleClick}
         onEdgeClick={onEdgeClick}
+        onEdgeDoubleClick={onEdgeDoubleClick}
         onPaneClick={onPaneClick}
         onNodeContextMenu={onNodeContextMenu}
         onDrop={onDrop}

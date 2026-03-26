@@ -10,7 +10,15 @@ import {
 import type { PipeEdge } from '@/types'
 import { useProjectStore, useUIStore, useCanvasStore } from '@/store'
 
-export type PipeEdgeType = Edge<{ pipe: PipeEdge }, 'PipeEdge'>
+type PipeEdgeValidation = {
+  severity: 'error' | 'warning'
+  messages: string[]
+}
+
+export type PipeEdgeType = Edge<{
+  pipe: PipeEdge
+  validation?: PipeEdgeValidation
+}, 'PipeEdge'>
 
 // ─── Edge context menu ────────────────────────────────────────────────────────
 
@@ -46,6 +54,7 @@ export function PipeEdgeRenderer({
   const { setAccessWindowUnitId, setRightPanelOpen } = useUIStore()
 
   const stream = data?.pipe.stream
+  const validation = data?.validation as PipeEdgeValidation | undefined
 
   // ── Edge color ──────────────────────────────────────────────────────────────
   let strokeColor: string
@@ -54,6 +63,12 @@ export function PipeEdgeRenderer({
   if (selected) {
     strokeColor = '#3B82F6'      // blue
     strokeDasharray = undefined
+  } else if (validation?.severity === 'error') {
+    strokeColor = '#EF4444'
+    strokeDasharray = '4,3'
+  } else if (validation?.severity === 'warning') {
+    strokeColor = '#F59E0B'
+    strokeDasharray = '4,3'
   } else if (stream?.errors && stream.errors.length > 0) {
     strokeColor = '#EF4444'      // red — error
     strokeDasharray = undefined
@@ -186,6 +201,14 @@ export function PipeEdgeRenderer({
             className="px-2 py-1 text-[10px] text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm whitespace-nowrap nodrag nopan"
           >
             <span className="font-medium text-gray-800">{data.pipe.tag}</span>
+            {validation && (
+              <>
+                {' '}
+                <span className={validation.severity === 'error' ? 'text-red-600' : 'text-amber-600'}>
+                  {validation.severity.toUpperCase()}
+                </span>
+              </>
+            )}
             {stream && (
               <>
                 {' '}
@@ -193,6 +216,12 @@ export function PipeEdgeRenderer({
                   Qm: {(stream.Qm * 3.6).toFixed(1)} t/h
                   {' | '}T: {(stream.T - 273.15).toFixed(0)}°C
                 </span>
+              </>
+            )}
+            {!stream && validation?.messages[0] && (
+              <>
+                {' '}
+                <span className="text-gray-500">| {validation.messages[0]}</span>
               </>
             )}
           </div>

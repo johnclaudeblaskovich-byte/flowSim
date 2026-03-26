@@ -2,7 +2,7 @@
 // Shows validation errors and warnings before solving.
 
 import * as Dialog from '@radix-ui/react-dialog'
-import { useCanvasStore } from '@/store'
+import { useCanvasStore, useUIStore } from '@/store'
 import type { ValidationResult } from '@/services/projectValidator'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -19,10 +19,25 @@ interface ValidationDialogProps {
 export function ValidationDialog({ open, result, onClose, onSolveAnyway }: ValidationDialogProps) {
   const setActiveFlowsheetId = useCanvasStore((s) => s.setActiveFlowsheetId)
   const setSelectedNodeId = useCanvasStore((s) => s.setSelectedNodeId)
+  const setSelectedEdgeId = useCanvasStore((s) => s.setSelectedEdgeId)
+  const setRightPanelOpen = useUIStore((s) => s.setRightPanelOpen)
+  const setAccessWindowUnitId = useUIStore((s) => s.setAccessWindowUnitId)
+  const setAccessWindowEdgeId = useUIStore((s) => s.setAccessWindowEdgeId)
 
-  function handleGoToUnit(flowsheetId: string, nodeId: string) {
+  function handleGoToIssue(flowsheetId: string, nodeId?: string, edgeId?: string) {
     if (flowsheetId) setActiveFlowsheetId(flowsheetId)
-    if (nodeId) setSelectedNodeId(nodeId)
+    if (nodeId) {
+      setSelectedNodeId(nodeId)
+      setAccessWindowUnitId(nodeId)
+      setAccessWindowEdgeId(null)
+      setRightPanelOpen(true)
+    }
+    if (edgeId) {
+      setSelectedEdgeId(edgeId)
+      setAccessWindowEdgeId(edgeId)
+      setAccessWindowUnitId(null)
+      setRightPanelOpen(true)
+    }
     onClose()
   }
 
@@ -70,12 +85,12 @@ export function ValidationDialog({ open, result, onClose, onSolveAnyway }: Valid
                         )}
                         <span className="text-xs text-red-800">{e.msg}</span>
                       </div>
-                      {e.nodeId && (
+                      {(e.nodeId || e.edgeId) && (
                         <button
-                          onClick={() => handleGoToUnit(e.flowsheetId, e.nodeId)}
+                          onClick={() => handleGoToIssue(e.flowsheetId, e.nodeId, e.edgeId)}
                           className="text-xs text-red-600 hover:underline flex-none"
                         >
-                          Go to unit
+                          {e.edgeId ? 'Go to stream' : 'Go to unit'}
                         </button>
                       )}
                     </div>
@@ -110,12 +125,12 @@ export function ValidationDialog({ open, result, onClose, onSolveAnyway }: Valid
                         )}
                         <span className="text-xs text-amber-800">{w.msg}</span>
                       </div>
-                      {w.nodeId && (
+                      {(w.nodeId || w.edgeId) && (
                         <button
-                          onClick={() => handleGoToUnit(w.flowsheetId, w.nodeId)}
+                          onClick={() => handleGoToIssue(w.flowsheetId, w.nodeId, w.edgeId)}
                           className="text-xs text-amber-600 hover:underline flex-none"
                         >
-                          Go to unit
+                          {w.edgeId ? 'Go to stream' : 'Go to unit'}
                         </button>
                       )}
                     </div>

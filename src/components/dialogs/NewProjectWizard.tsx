@@ -5,47 +5,7 @@ import { useProjectStore, useUIStore, createDefaultProject } from '@/store'
 import { useCanvasStore } from '@/store'
 import type { SolveMode, HeatMode, UnitPreferences } from '@/types'
 import { cn } from '@/lib/utils'
-
-// ─── Common species list (used until a master DB exists) ──────────────────────
-
-interface SpeciesEntry {
-  id: string
-  name: string
-  formula: string
-  phase: string
-  category: string
-}
-
-const COMMON_SPECIES: SpeciesEntry[] = [
-  { id: 'Water',    name: 'Water',               formula: 'H₂O',        phase: 'Liquid',  category: 'Water' },
-  { id: 'Steam',    name: 'Steam',               formula: 'H₂O',        phase: 'Vapour',  category: 'Water' },
-  { id: 'H2SO4',   name: 'Sulfuric Acid',        formula: 'H₂SO₄',      phase: 'Aqueous', category: 'Acids' },
-  { id: 'HCl',     name: 'Hydrochloric Acid',    formula: 'HCl',        phase: 'Aqueous', category: 'Acids' },
-  { id: 'HNO3',    name: 'Nitric Acid',          formula: 'HNO₃',       phase: 'Aqueous', category: 'Acids' },
-  { id: 'NaOH',    name: 'Sodium Hydroxide',     formula: 'NaOH',       phase: 'Aqueous', category: 'Bases' },
-  { id: 'Ca(OH)2', name: 'Lime',                 formula: 'Ca(OH)₂',    phase: 'Solid',   category: 'Bases' },
-  { id: 'ZnSO4',   name: 'Zinc Sulfate',         formula: 'ZnSO₄',      phase: 'Aqueous', category: 'Metals' },
-  { id: 'CuSO4',   name: 'Copper Sulfate',       formula: 'CuSO₄',      phase: 'Aqueous', category: 'Metals' },
-  { id: 'Fe2SO43', name: 'Iron(III) Sulfate',    formula: 'Fe₂(SO₄)₃', phase: 'Aqueous', category: 'Metals' },
-  { id: 'Zn',      name: 'Zinc',                 formula: 'Zn',         phase: 'Solid',   category: 'Metals' },
-  { id: 'Cu',      name: 'Copper',               formula: 'Cu',         phase: 'Solid',   category: 'Metals' },
-  { id: 'Fe',      name: 'Iron',                 formula: 'Fe',         phase: 'Solid',   category: 'Metals' },
-  { id: 'Pb',      name: 'Lead',                 formula: 'Pb',         phase: 'Solid',   category: 'Metals' },
-  { id: 'SiO2',    name: 'Silica',               formula: 'SiO₂',       phase: 'Solid',   category: 'Minerals' },
-  { id: 'CaCO3',   name: 'Limestone',            formula: 'CaCO₃',      phase: 'Solid',   category: 'Minerals' },
-  { id: 'Al2O3',   name: 'Alumina',              formula: 'Al₂O₃',      phase: 'Solid',   category: 'Minerals' },
-  { id: 'FeS2',    name: 'Pyrite',               formula: 'FeS₂',       phase: 'Solid',   category: 'Minerals' },
-  { id: 'O2',      name: 'Oxygen',               formula: 'O₂',         phase: 'Vapour',  category: 'Gases' },
-  { id: 'N2',      name: 'Nitrogen',             formula: 'N₂',         phase: 'Vapour',  category: 'Gases' },
-  { id: 'CO2',     name: 'Carbon Dioxide',       formula: 'CO₂',        phase: 'Vapour',  category: 'Gases' },
-  { id: 'CH4',     name: 'Methane',              formula: 'CH₄',        phase: 'Vapour',  category: 'Gases' },
-  { id: 'SO2',     name: 'Sulfur Dioxide',       formula: 'SO₂',        phase: 'Vapour',  category: 'Gases' },
-  { id: 'NaCl',    name: 'Sodium Chloride',      formula: 'NaCl',       phase: 'Aqueous', category: 'Salts' },
-  { id: 'Ethanol', name: 'Ethanol',              formula: 'C₂H₅OH',     phase: 'Liquid',  category: 'Organics' },
-  { id: 'Acetone', name: 'Acetone',              formula: 'C₃H₆O',      phase: 'Liquid',  category: 'Organics' },
-]
-
-const CATEGORIES = [...new Set(COMMON_SPECIES.map((s) => s.category))]
+import { COMMON_SPECIES, COMMON_SPECIES_CATEGORIES, type SpeciesCatalogEntry } from '@/lib/speciesCatalog'
 
 // ─── Wizard state ─────────────────────────────────────────────────────────────
 
@@ -191,7 +151,7 @@ function Step2({ state, onChange }: { state: WizardState; onChange: (updates: Pa
       )
     : COMMON_SPECIES
 
-  const byCategory = CATEGORIES.reduce<Record<string, SpeciesEntry[]>>((acc, cat) => {
+  const byCategory = COMMON_SPECIES_CATEGORIES.reduce<Record<string, SpeciesCatalogEntry[]>>((acc, cat) => {
     acc[cat] = filtered.filter((s) => s.category === cat)
     return acc
   }, {})
@@ -203,7 +163,7 @@ function Step2({ state, onChange }: { state: WizardState; onChange: (updates: Pa
     onChange({ selectedSpecies: next })
   }
 
-  function toggleCategory(_cat: string, entries: SpeciesEntry[]) {
+  function toggleCategory(_cat: string, entries: SpeciesCatalogEntry[]) {
     const next = new Set(state.selectedSpecies)
     const allSelected = entries.every((s) => next.has(s.id))
     for (const s of entries) {
@@ -228,7 +188,7 @@ function Step2({ state, onChange }: { state: WizardState; onChange: (updates: Pa
       </div>
 
       <div className="border border-gray-200 rounded-lg overflow-y-auto max-h-[360px]">
-        {CATEGORIES.map((cat) => {
+        {COMMON_SPECIES_CATEGORIES.map((cat) => {
           const entries = byCategory[cat]
           if (!entries?.length) return null
           const allSelected = entries.every((s) => state.selectedSpecies.has(s.id))

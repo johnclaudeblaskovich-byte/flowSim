@@ -74,6 +74,7 @@ export interface StreamData {
   destUnitTag: string
   solved: boolean
   errors: string[]
+  quality?: Record<string, unknown>
 }
 
 // ─── Units ────────────────────────────────────────────────────────────────────
@@ -120,6 +121,8 @@ export interface PipeEdge {
   target: string
   sourceHandle?: string
   targetHandle?: string
+  sourcePortKey?: string
+  targetPortKey?: string
   stream?: StreamData
   config: {
     simplified: boolean
@@ -200,6 +203,7 @@ export interface ReportConfig {
 }
 
 export interface Project {
+  schemaVersion: number
   id: string
   name: string
   description: string
@@ -211,6 +215,8 @@ export interface Project {
   flowsheets: Flowsheet[]
   solverSettings: SolverSettings
   reports?: ReportConfig[]
+  solveHistory: SolveHistoryEntry[]
+  readinessReports: ReadinessReport[]
 }
 
 // ─── Unit Preferences ─────────────────────────────────────────────────────────
@@ -228,11 +234,101 @@ export interface AuditEntry {
   severity: 'info' | 'warning' | 'error'
 }
 
+export interface SolverDiagnosticEvent {
+  id: string
+  solveId: string
+  timestamp: string
+  type: 'status' | 'result' | 'done' | 'error' | 'client'
+  unitTag?: string
+  message: string
+  detail?: string
+}
+
+export interface SolverUnitSummary {
+  id: string
+  solveId: string
+  flowsheetId: string
+  unitId: string
+  unitTag: string
+  unitType: UnitModelType
+  incomingCount: number
+  outgoingCount: number
+  incomingMassFlowTph: number
+  outgoingMassFlowTph: number
+  massDeltaTph: number
+  massClosurePercent: number | null
+  routes: Array<{
+    edgeId: string
+    edgeTag: string
+    routeKey?: string
+    massFlowTph: number | null
+    direction: 'inlet' | 'outlet'
+  }>
+}
+
+export interface SolveHistoryEntry {
+  id: string
+  solveId: string
+  startedAt: string
+  completedAt: string
+  status: Extract<SolverStatus, 'converged' | 'error'>
+  iteration: number
+  maxError: number
+  elapsedMs: number
+  solvedUnits: number
+  diagnosticsCount: number
+  unitSummaryCount: number
+  summary: string
+}
+
+export interface ReadinessIssueSnapshot {
+  severity: 'error' | 'warning'
+  flowsheetId: string
+  flowsheetName: string
+  nodeId?: string
+  unitTag: string
+  edgeId?: string
+  edgeTag?: string
+  kind: 'project' | 'unit' | 'stream'
+  message: string
+}
+
+export interface ReadinessFlowsheetSummary {
+  flowsheetId: string
+  flowsheetName: string
+  unitCount: number
+  streamCount: number
+  issueCount: number
+  errorCount: number
+  warningCount: number
+  missingRouteCount: number
+  assignedRouteCount: number
+}
+
+export interface ReadinessReport {
+  id: string
+  generatedAt: string
+  overallStatus: 'ready' | 'warnings' | 'blocked'
+  totalIssues: number
+  errorCount: number
+  warningCount: number
+  unitIssueCount: number
+  streamIssueCount: number
+  projectIssueCount: number
+  missingRouteCount: number
+  assignedRouteCount: number
+  flowsheets: ReadinessFlowsheetSummary[]
+  issues: ReadinessIssueSnapshot[]
+}
+
 export interface SolverState {
   status: SolverStatus
   iteration: number
   maxError: number
   elapsedMs: number
+  activeSolveId: string | null
   unitStatuses: Record<string, UnitSolveStatus>
   auditErrors: AuditEntry[]
+  diagnostics: SolverDiagnosticEvent[]
+  unitSummaries: SolverUnitSummary[]
 }
