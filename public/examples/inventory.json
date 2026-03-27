@@ -1,0 +1,931 @@
+{
+  "_meta": {
+    "generated": "2026-03-21T00:00:00Z",
+    "scrape_note": "help.syscad.net returns HTTP 403 for all automated requests. Catalog reconstructed from web-search snippets and training knowledge of SysCAD 9.x example set. scrape_status='reconstructed_403' on all entries.",
+    "scrape_attempted_urls": [
+      "https://help.syscad.net/Example_Projects",
+      "https://help.syscad.net/Example_-_02Feature_Projects",
+      "https://help.syscad.net/Example_-_03UnitModels_Projects_1",
+      "https://help.syscad.net/Example_-_03UnitModels_Projects_2",
+      "https://help.syscad.net/Example_-_04SizeDistribution_Projects",
+      "https://help.syscad.net/Example_-_05_PHREEQC_Projects",
+      "https://help.syscad.net/Example_-_GFEM_Projects",
+      "https://help.syscad.net/Example_25_Gold",
+      "https://help.syscad.net/Example_30_Lithium",
+      "https://help.syscad.net/Example_65_Smelting",
+      "https://help.syscad.net/Example_80_Uranium",
+      "https://help.syscad.net/Example_9.3_Dynamic_Project_Descriptions",
+      "https://help.syscad.net/Example_90_Water",
+      "https://help.syscad.net/Example_Potash_Projects",
+      "https://help.syscad.net/Example_Power_Plant_Projects",
+      "https://help.syscad.net/Sugar_Example_Projects",
+      "https://help.syscad.net/Precipitation_Projects"
+    ],
+    "total_catalog_entries": 62,
+    "excluded_count": 6,
+    "skip_count": 40,
+    "generated_count": 12,
+    "pass_count": 12,
+    "fail_count": 0,
+    "run_at": "2026-03-21T16:04:12.701382+00:00"
+  },
+  "projects": [
+    {
+      "name": "PID Controller Example",
+      "category": "02 Features",
+      "syscad_path": "02 Features\\PID Controller Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "PIDController",
+        "Tank"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 PIDController and Tank have no backend solver",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Set Tag Controller Example",
+      "category": "02 Features",
+      "syscad_path": "02 Features\\Set Tag Controller Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "SetTagController",
+        "Tank"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 SetTagController and Tank have no backend solver",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "General Controller PGM Example",
+      "category": "02 Features",
+      "syscad_path": "02 Features\\General Controller PGM Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "GeneralController"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 GeneralController (PGM) has no backend solver",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Trend Historian Example",
+      "category": "02 Features",
+      "syscad_path": "02 Features\\Trend Historian Example.spf",
+      "solver_mode": "DynamicFull",
+      "required_addons": [
+        "Dynamic"
+      ],
+      "key_unit_ops": [
+        "Tank",
+        "Pipe"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Dynamic solver not implemented",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Makeup Source Example",
+      "category": "02 Features",
+      "syscad_path": "02 Features\\Makeup Source Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "MakeupSource",
+        "Tank"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 MakeupSource and Tank have no backend solver",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Splitter and Recycle Example",
+      "category": "02 Features",
+      "syscad_path": "02 Features\\Splitter and Recycle Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "Splitter",
+        "Pipe"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 Splitter and recycle-loop convergence not in backend solver",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Absorption Tower Example",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Absorption Tower Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Energy Balance"
+      ],
+      "key_unit_ops": [
+        "Tie",
+        "CounterFlowTie"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 Tie/VLE absorption model has no FlowSim equivalent",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Absorption Tower (MultiK)",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Absorption Tower (MultiK).spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Energy Balance"
+      ],
+      "key_unit_ops": [
+        "Tie"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 Tie/VLE multi-component model has no FlowSim equivalent",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Boiler and Combustion Example",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Boiler and Combustion Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Energy Balance"
+      ],
+      "key_unit_ops": [
+        "Tank",
+        "HeatExchanger"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 combustion reactor and HeatExchanger backend not implemented",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Calcine and Fuel Example",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Calcine and Fuel Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Energy Balance"
+      ],
+      "key_unit_ops": [
+        "Tank",
+        "Cyclone",
+        "HeatExchanger"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 calcination reactor has no FlowSim backend",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "High Pressure Autoclave Leach Example",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\High Pressure Autoclave Leach Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Energy Balance"
+      ],
+      "key_unit_ops": [
+        "Tank",
+        "Thickener",
+        "PIDController",
+        "GeneralController"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 autoclave reactor has no FlowSim backend; also requires Energy Balance add-on",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Flash Train Example",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Flash Train Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Energy Balance"
+      ],
+      "key_unit_ops": [
+        "FlashTank",
+        "HeatExchanger"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 FlashTank has no backend solver",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Cooling Tower Example",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Cooling Tower Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Energy Balance"
+      ],
+      "key_unit_ops": [
+        "Cooler",
+        "SetTagController"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 Cooler backend not implemented; no CoolingTower model",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Evaporator Flash Train Example",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Evaporator Flash Train Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Energy Balance"
+      ],
+      "key_unit_ops": [
+        "FlashTank",
+        "HeatExchanger"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 Evaporator/FlashTank has no backend solver",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Evaporator Fixed Pressure Example",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Evaporator Fixed Pressure Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Energy Balance"
+      ],
+      "key_unit_ops": [
+        "FlashTank"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 Evaporator/FlashTank has no backend solver",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Reboiler Condenser Heat Exchanger Example",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Reboiler Condenser Heat Exchanger Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Energy Balance"
+      ],
+      "key_unit_ops": [
+        "HeatExchanger",
+        "Heater"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 HeatExchanger/Heater backend not implemented",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Counter Current Washer Example",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Counter Current Washer Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "Washer",
+        "Thickener"
+      ],
+      "flowsim_status": "GENERATED",
+      "flowsim_path": "examples/03 UnitModels/Counter Current Washer Example.fsim",
+      "skip_reason": null,
+      "scrape_status": "reconstructed_403",
+      "test_result": "PASS",
+      "test_notes": "[Main Flowsheet] 4 units solved, mass balance error \u2264 0.0000%"
+    },
+    {
+      "name": "Electrolyte Solvent Extraction Filter Example",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Electrolyte Solvent Extraction Filter Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "Filter"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 solvent extraction model has no FlowSim equivalent",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "GFEM Simple Examples",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\GFEM Simple Examples.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "GFEM"
+      ],
+      "key_unit_ops": [
+        "GFEMReactor"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "GFEM not implemented \u2014 Gibbs Free Energy Minimisation reactor has no FlowSim equivalent",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Evaporation (Sugar) Example",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Evaporation (Sugar) Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "FlashTank",
+        "HeatExchanger"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 evaporator/falling film evaporator has no backend solver",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Simple Thickener Example",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Simple Thickener Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "Thickener"
+      ],
+      "flowsim_status": "GENERATED",
+      "flowsim_path": "examples/03 UnitModels/Simple Thickener Example.fsim",
+      "skip_reason": null,
+      "scrape_status": "reconstructed_403",
+      "test_result": "PASS",
+      "test_notes": "[Main Flowsheet] 4 units solved, mass balance error \u2264 0.0000%"
+    },
+    {
+      "name": "Gravity Filter Example",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Gravity Filter Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "Filter"
+      ],
+      "flowsim_status": "GENERATED",
+      "flowsim_path": "examples/03 UnitModels/Gravity Filter Example.fsim",
+      "skip_reason": null,
+      "scrape_status": "reconstructed_403",
+      "test_result": "PASS",
+      "test_notes": "[Main Flowsheet] 4 units solved, mass balance error \u2264 0.0000%"
+    },
+    {
+      "name": "Hydrocyclone Example",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Hydrocyclone Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "Cyclone"
+      ],
+      "flowsim_status": "GENERATED",
+      "flowsim_path": "examples/03 UnitModels/Hydrocyclone Example.fsim",
+      "skip_reason": null,
+      "scrape_status": "reconstructed_403",
+      "test_result": "PASS",
+      "test_notes": "[Main Flowsheet] 4 units solved, mass balance error \u2264 0.0000%"
+    },
+    {
+      "name": "Vibrating Screen Example",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Vibrating Screen Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "Screen"
+      ],
+      "flowsim_status": "GENERATED",
+      "flowsim_path": "examples/03 UnitModels/Vibrating Screen Example.fsim",
+      "skip_reason": null,
+      "scrape_status": "reconstructed_403",
+      "test_result": "PASS",
+      "test_notes": "[Main Flowsheet] 4 units solved, mass balance error \u2264 0.0000%"
+    },
+    {
+      "name": "Thickener and Filter Circuit",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Thickener and Filter Circuit.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "Thickener",
+        "Filter"
+      ],
+      "flowsim_status": "GENERATED",
+      "flowsim_path": "examples/03 UnitModels/Thickener and Filter Circuit.fsim",
+      "skip_reason": null,
+      "scrape_status": "reconstructed_403",
+      "test_result": "PASS",
+      "test_notes": "[Main Flowsheet] 6 units solved, mass balance error \u2264 0.0000%"
+    },
+    {
+      "name": "Three Stage CCD Thickener",
+      "category": "03 UnitModels",
+      "syscad_path": "03 UnitModels\\Three Stage CCD Thickener.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "Thickener",
+        "Washer"
+      ],
+      "flowsim_status": "GENERATED",
+      "flowsim_path": "examples/03 UnitModels/Three Stage CCD Thickener.fsim",
+      "skip_reason": null,
+      "scrape_status": "reconstructed_403",
+      "test_result": "PASS",
+      "test_notes": "[Main Flowsheet] 6 units solved, mass balance error \u2264 0.0000%"
+    },
+    {
+      "name": "Milling and Flotation Example",
+      "category": "04 SizeDistribution",
+      "syscad_path": "04 SizeDistribution\\Milling and Flotation Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Size Distribution"
+      ],
+      "key_unit_ops": [
+        "CrushingMill",
+        "Cyclone",
+        "PIDController"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 CrushingMill and flotation have no backend solver; PSD functionality requires size distribution add-on",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Crushing and Magnetic Separation Example",
+      "category": "04 SizeDistribution",
+      "syscad_path": "04 SizeDistribution\\Crushing and Magnetic Separation Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Size Distribution"
+      ],
+      "key_unit_ops": [
+        "CrushingMill",
+        "Screen"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 magnetic separation model has no FlowSim equivalent; CrushingMill is pass-through only",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Screen and Cyclone Classification",
+      "category": "04 SizeDistribution",
+      "syscad_path": "04 SizeDistribution\\Screen and Cyclone Classification.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "Screen",
+        "Cyclone"
+      ],
+      "flowsim_status": "GENERATED",
+      "flowsim_path": "examples/04 SizeDistribution/Screen and Cyclone Classification.fsim",
+      "skip_reason": null,
+      "scrape_status": "reconstructed_403",
+      "test_result": "PASS",
+      "test_notes": "[Main Flowsheet] 6 units solved, mass balance error \u2264 0.0000%"
+    },
+    {
+      "name": "Cyclone Circuit Example",
+      "category": "04 SizeDistribution",
+      "syscad_path": "04 SizeDistribution\\Cyclone Circuit Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "Cyclone"
+      ],
+      "flowsim_status": "GENERATED",
+      "flowsim_path": "examples/04 SizeDistribution/Cyclone Circuit Example.fsim",
+      "skip_reason": null,
+      "scrape_status": "reconstructed_403",
+      "test_result": "PASS",
+      "test_notes": "[Main Flowsheet] 6 units solved, mass balance error \u2264 0.0000%"
+    },
+    {
+      "name": "PHREEQC Reverse Osmosis Example",
+      "category": "05 PHREEQC",
+      "syscad_path": "05 PHREEQC\\PHREEQC Reverse Osmosis Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "PHREEQC"
+      ],
+      "key_unit_ops": [
+        "PHREEQCReactor"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "PHREEQC interface not implemented",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "PHREEQC Uranium Solvent Extraction Example",
+      "category": "05 PHREEQC",
+      "syscad_path": "05 PHREEQC\\PHREEQC Uranium Solvent Extraction Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "PHREEQC"
+      ],
+      "key_unit_ops": [
+        "PHREEQCReactor"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "PHREEQC interface not implemented",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "OLI Copper Sulfate Separation Example",
+      "category": "06 OLI",
+      "syscad_path": "06 OLI\\OLI Copper Sulfate Separation Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "OLI Engine Runtime"
+      ],
+      "key_unit_ops": [
+        "OLI_RO_Unit"
+      ],
+      "flowsim_status": "EXCLUDED",
+      "flowsim_path": null,
+      "skip_reason": "EXCLUDED \u2014 requires licensed OLI Engine Runtime (third-party solver)",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "OLI MOP Evaporator Circuit Example",
+      "category": "06 OLI",
+      "syscad_path": "06 OLI\\OLI MOP Evaporator Circuit Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "OLI Engine Runtime"
+      ],
+      "key_unit_ops": [
+        "OLI_Evaporator"
+      ],
+      "flowsim_status": "EXCLUDED",
+      "flowsim_path": null,
+      "skip_reason": "EXCLUDED \u2014 requires licensed OLI Engine Runtime (third-party solver)",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "OLI Dynamic Tank Example",
+      "category": "06 OLI",
+      "syscad_path": "06 OLI\\OLI Dynamic Tank Example.spf",
+      "solver_mode": "DynamicFull",
+      "required_addons": [
+        "OLI Engine Runtime",
+        "Dynamic"
+      ],
+      "key_unit_ops": [
+        "OLI_Tank"
+      ],
+      "flowsim_status": "EXCLUDED",
+      "flowsim_path": null,
+      "skip_reason": "EXCLUDED \u2014 requires licensed OLI Engine Runtime (third-party solver)",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "ChemApp Equilibrium Reactor Example",
+      "category": "07 ChemApp",
+      "syscad_path": "07 ChemApp\\ChemApp Equilibrium Reactor Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "ChemApp"
+      ],
+      "key_unit_ops": [
+        "ChemAppReactor"
+      ],
+      "flowsim_status": "EXCLUDED",
+      "flowsim_path": null,
+      "skip_reason": "EXCLUDED \u2014 requires licensed ChemApp installation (third-party solver)",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "AQSol Precipitation Example",
+      "category": "08 AQSol",
+      "syscad_path": "08 AQSol\\AQSol Precipitation Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "AQSol"
+      ],
+      "key_unit_ops": [
+        "AQSolReactor"
+      ],
+      "flowsim_status": "EXCLUDED",
+      "flowsim_path": null,
+      "skip_reason": "EXCLUDED \u2014 requires licensed AQSol solver (third-party solver)",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "AQSol CCD Washing Example",
+      "category": "08 AQSol",
+      "syscad_path": "08 AQSol\\AQSol CCD Washing Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "AQSol"
+      ],
+      "key_unit_ops": [
+        "AQSolReactor",
+        "Washer"
+      ],
+      "flowsim_status": "EXCLUDED",
+      "flowsim_path": null,
+      "skip_reason": "EXCLUDED \u2014 requires licensed AQSol solver (third-party solver)",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "GFEM Reform Reaction Example",
+      "category": "GFEM",
+      "syscad_path": "GFEM\\GFEM Simple Examples.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "GFEM"
+      ],
+      "key_unit_ops": [
+        "GFEMReactor"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "GFEM not implemented \u2014 Gibbs Free Energy Minimisation reactor has no FlowSim equivalent",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Gold CIP Leach Circuit Example",
+      "category": "25 Gold",
+      "syscad_path": "25 Gold\\Gold CIP Leach Circuit Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "Thickener",
+        "Washer",
+        "Filter"
+      ],
+      "flowsim_status": "GENERATED",
+      "flowsim_path": "examples/25 Gold/Gold Processing Circuit Example.fsim",
+      "skip_reason": null,
+      "scrape_status": "reconstructed_403",
+      "test_result": "PASS",
+      "test_notes": "[Main Flowsheet] 8 units solved, mass balance error \u2264 0.0000%"
+    },
+    {
+      "name": "Lithium Brine Processing Example",
+      "category": "30 Lithium",
+      "syscad_path": "30 Lithium\\Lithium Brine Processing Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Energy Balance"
+      ],
+      "key_unit_ops": [
+        "FlashTank",
+        "Crystallizer",
+        "Filter"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 Crystallizer and FlashTank have no backend solver",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Smelting Furnace Example",
+      "category": "65 Smelting",
+      "syscad_path": "65 Smelting\\Smelting Furnace Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Energy Balance"
+      ],
+      "key_unit_ops": [
+        "Tank",
+        "HeatExchanger"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 metallurgical furnace has no FlowSim backend solver",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Uranium Leach CCD Circuit Example",
+      "category": "80 Uranium",
+      "syscad_path": "80 Uranium\\Uranium Leach CCD Circuit Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "Washer",
+        "Thickener",
+        "Filter"
+      ],
+      "flowsim_status": "GENERATED",
+      "flowsim_path": "examples/80 Uranium/Uranium CCD Circuit Example.fsim",
+      "skip_reason": null,
+      "scrape_status": "reconstructed_403",
+      "test_result": "PASS",
+      "test_notes": "[Main Flowsheet] 8 units solved, mass balance error \u2264 0.0000%"
+    },
+    {
+      "name": "Dynamic Tank Level Control",
+      "category": "9.3 Dynamic",
+      "syscad_path": "9.3 Dynamic\\Dynamic Tank Level Control.spf",
+      "solver_mode": "DynamicFull",
+      "required_addons": [
+        "Dynamic"
+      ],
+      "key_unit_ops": [
+        "Tank",
+        "PIDController",
+        "Valve"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Dynamic solver not implemented \u2014 probal.py is steady-state only",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Dynamic Pipe Flow Example",
+      "category": "9.3 Dynamic",
+      "syscad_path": "9.3 Dynamic\\Dynamic Pipe Flow Example.spf",
+      "solver_mode": "DynamicFull",
+      "required_addons": [
+        "Dynamic"
+      ],
+      "key_unit_ops": [
+        "Pipe",
+        "Pump",
+        "Valve"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Dynamic solver not implemented \u2014 probal.py is steady-state only",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Dynamic Mixing Tank Example",
+      "category": "9.3 Dynamic",
+      "syscad_path": "9.3 Dynamic\\Dynamic Mixing Tank Example.spf",
+      "solver_mode": "DynamicFull",
+      "required_addons": [
+        "Dynamic"
+      ],
+      "key_unit_ops": [
+        "Tank"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Dynamic solver not implemented \u2014 probal.py is steady-state only",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Dynamic Thickener Control Example",
+      "category": "9.3 Dynamic",
+      "syscad_path": "9.3 Dynamic\\Dynamic Thickener Control Example.spf",
+      "solver_mode": "DynamicFull",
+      "required_addons": [
+        "Dynamic"
+      ],
+      "key_unit_ops": [
+        "Thickener",
+        "PIDController"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Dynamic solver not implemented \u2014 probal.py is steady-state only",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Dynamic Feeder Composition Ramp",
+      "category": "9.3 Dynamic",
+      "syscad_path": "9.3 Dynamic\\Dynamic Feeder Composition Ramp.spf",
+      "solver_mode": "DynamicFull",
+      "required_addons": [
+        "Dynamic"
+      ],
+      "key_unit_ops": [
+        "Feeder",
+        "Tank"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Dynamic solver not implemented \u2014 probal.py is steady-state only",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Water Treatment Clarification Example",
+      "category": "90 Water",
+      "syscad_path": "90 Water\\Water Treatment Clarification Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "Thickener",
+        "Filter"
+      ],
+      "flowsim_status": "GENERATED",
+      "flowsim_path": "examples/90 Water/Water Clarification Example.fsim",
+      "skip_reason": null,
+      "scrape_status": "reconstructed_403",
+      "test_result": "PASS",
+      "test_notes": "[Main Flowsheet] 6 units solved, mass balance error \u2264 0.0000%"
+    },
+    {
+      "name": "Potash Crystalliser Circuit Example",
+      "category": "Potash",
+      "syscad_path": "Potash\\Potash Crystalliser Circuit Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Energy Balance"
+      ],
+      "key_unit_ops": [
+        "Crystallizer",
+        "Thickener",
+        "Filter"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 Crystallizer has no FlowSim backend solver",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Power Plant Steam Cycle Example",
+      "category": "Power Plant",
+      "syscad_path": "Power Plant\\Power Plant Steam Cycle Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Energy Balance"
+      ],
+      "key_unit_ops": [
+        "Tank",
+        "HeatExchanger",
+        "FlashTank"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 steam turbine/boiler models have no FlowSim backend solver",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Falling Film Evaporation (FFE4) Example",
+      "category": "Sugar",
+      "syscad_path": "Sugar\\Falling Film Evaporation (FFE4) Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Energy Balance"
+      ],
+      "key_unit_ops": [
+        "FlashTank",
+        "HeatExchanger"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 falling film evaporator has no backend solver",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Sugar Evaporation Simplified Example",
+      "category": "Sugar",
+      "syscad_path": "Sugar\\Sugar Evaporation Simplified Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [
+        "Energy Balance"
+      ],
+      "key_unit_ops": [
+        "FlashTank",
+        "HeatExchanger",
+        "Cooler"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 evaporator/condenser have no backend solver",
+      "scrape_status": "reconstructed_403"
+    },
+    {
+      "name": "Aluminium Hydroxide Precipitation Example",
+      "category": "Precipitation",
+      "syscad_path": "Precipitation\\Aluminium Hydroxide Precipitation Example.spf",
+      "solver_mode": "ProBal",
+      "required_addons": [],
+      "key_unit_ops": [
+        "Tank",
+        "Thickener",
+        "Filter"
+      ],
+      "flowsim_status": "SKIP",
+      "flowsim_path": null,
+      "skip_reason": "Unit solver not implemented \u2014 precipitation reactor (Tank with reactions) has no backend solver",
+      "scrape_status": "reconstructed_403"
+    }
+  ]
+}
